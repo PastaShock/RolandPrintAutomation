@@ -1,0 +1,286 @@
+//George Pastushok 2021
+
+// const { compileClientWithDependenciesTracked } = require("pug")
+
+//create a js file thatis created when the user selects orders and click s the create package button. The button runs a function that checks for currently selected orders, gets their information, puts it into an object and creates a downloadable file with it.
+//following variable declarations are order specific data
+var orderId = 0
+var fundId = 0
+var fundName = ""
+var placedDate = 0
+var downloadDate = 0
+var printDate = 0
+var orderType = 0
+var logoScript = ""
+var priColor = ""
+var secColor = ""
+var logoId = 0
+//next variable are going to be counts of logos per size
+var eleven = 0
+var eight = 0
+var six = 0
+var five = 0
+var four = 0
+var COUNTELEVEN = {}
+var ORDERS_SELECTED = {}
+var PASTSELECTION = 0
+//var COUNTSELECTEDLOGOS = ""
+//next variables are increments
+var i //for incrementing at the order level on the main page.
+var x //for storing the number of orders on the page
+var j //for incrementing within the order card
+var y //for storing the number of items within an order card.
+
+//constants
+orders = {}
+orderlist = {}
+url = 'https://4766534.app.netsuite.com/app/common/search/searchresults.nl?searchid=673&dle=T'
+filename = 'orders.json'
+//  order row
+orderRow = document.getElementsByClassName('uir-list-row-tr')
+//  order column
+orderCol = 'td'
+constCheck = 'order-toggle'
+
+//setting up for the script
+
+x = orderRow.length
+//get column numbers for each piece of data:
+
+function getColumnNames() {
+    headerRow = document.getElementsByClassName('uir-list-header-td')
+    for (h = 0; h < headerRow.length; h++) {
+        for (column in COLUMNS) {
+            if (headerRow[h].innerText.trim() == COLUMNS[column].name) {
+                COLUMNS[column].column = h;
+               }
+        }
+    }
+}
+
+function init() {
+    COLUMNS = {
+        "COLOI": {"column": "", "name": "ORDER ID"},                //ORDER ID
+        "COLFI": {"column": "", "name": "FUNDRAISER ID"},           //FUNDRAISER ID
+        "COLFN": {"column": "", "name": "FUNDRAISER"},              //FUNDRAISER - fund name
+        "COLPD": {"column": "", "name": "ORDERED"},                 //ORDERED - placed date
+        "COLOT": {"column": "", "name": "ORDER TYPE"},              //ORDER TYPE
+        "COLLD": {"column": "", "name": "LOGO DETAILS"},            //LOGO DETALS - scritpt, type, pri, sec
+        "COLDD": {"column": "", "name": "DESIGN DETAILS"},          //DESIGN DETAILS - qty of 11x, 8x, 6x... per size 
+        "COLDF": {"column": "", "name": "DESIGNS"},                 //DESIGNS - qty of logo sizes
+        "COLDL": {"column": "", "name": "ALL DESIGNS & SLIPS"},     //ALL DESIGNS AND SLIPS
+        "COLSO": {"column": "", "name": "REFERENCE #"}              //SALES ORDER ID NUMBER - for matching shipments
+    }
+    getColumnNames()
+    for (o = 0; o < (x); o++) {
+        toggle = createToggle(o)
+        if (!orderRow[o].getElementsByTagName(orderCol)[0].getElementsByClassName('order-toggle')[0]) {
+            orderRow[o].getElementsByTagName(orderCol)[0].appendChild(toggle)
+            orderRow[o].getElementsByTagName(orderCol)[0].appendChild(createOnClick(o))
+            //setTimeout(console.log('setTimeout(100ms)'), 100)
+        }
+    }
+    for (j = 0; j < x; j++) {
+        var NUMBEROFLOGOSPERORDER = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n').length
+        for (f = 0; f < NUMBEROFLOGOSPERORDER; f++) {
+            var LOGOCOUNTS = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n')[f]
+            if (LOGOCOUNTS.split('-')[0] == "11x6 ") {
+                COUNTELEVEN[j] = LOGOCOUNTS.split(' - ')[1]
+            }
+        }
+        ORDERCOUNTDIV = document.createElement('div')
+        ORDERCOUNTDIV.setAttribute('class', 'LENINGRAD')
+        ORDERCOUNT = document.createElement('p')
+        ORDERCOUNT.setAttribute('class', 'STALINGRAD')
+        ORDERCOUNT.innerText = COUNTELEVEN[j]
+        ORDERCOUNTDIV.appendChild(ORDERCOUNT)
+        orderRow[j].getElementsByTagName(orderCol)[1].appendChild(ORDERCOUNTDIV)
+    }
+//        if (document.getElementsByClassName('listEditSpan')[o] == "Weeding & Masking") {
+//         ORDERS_SELECTED[o] = true;
+//         } else {
+//             ORDERS_SELECTED[o] = false}
+//     }
+}
+
+function getHREF(d) {
+    gotHREF = orderRow[d].getElementsByTagName(orderCol)[COLUMNS.COLDL.column].getElementsByTagName('a')[0].getAttribute('onclick')
+    return gotHREF
+}
+
+function createToggle(ti) {
+    let toggle = document.createElement("div")
+    toggle.setAttribute('id', 'extreme-list-edit-button')
+    toggle.setAttribute('class', 'toggled-off order-toggle')
+    toggle.setAttribute('tabindex', ti+1)
+    toggle.setAttribute('role', 'button')
+    toggle.setAttribute('onclick', 'changeState('+ ti +')')
+    //toggle.setAttribute('href', getHREF(ti))
+    return toggle
+}
+
+function createOnClick(ti) {
+    let toggleHREF = document.createElement('a')
+    toggleHREF.setAttribute('href', 'javascript:void(0)')
+    toggleHREF.setAttribute('onclick', getHREF(ti))
+    toggleHREF.textContent = 'download'
+    return toggleHREF
+}    
+
+function changeState(elStateToChange) {
+    toggleEl = document.getElementsByClassName('order-toggle')[elStateToChange]
+    if (toggleEl.getAttribute('class') == 'toggled-off order-toggle') {
+        toggleEl.setAttribute('class', 'toggled-on order-toggle')
+        //set workflow stage to "Weeding and Masking"
+        document.getElementById('lstinln_' + elStateToChange + '_0').innerText = 'Weeding & Masking'
+    } else {
+        toggleEl.setAttribute('class', 'toggled-off order-toggle')
+        //set workflow stage to "Printing"
+        document.getElementById('lstinln_' + elStateToChange + '_0').innerText = "Printing"
+    }
+}
+
+
+//create a console save function to download the information of the order(s).
+console.save = function(data, filename){
+
+    if(!data) {
+        console.error('Console.save: No data')
+        return;
+    }
+
+    if(!filename) filename = 'console.json'
+
+    if(typeof data === "object"){
+        data = JSON.stringify(data, undefined, 4)
+    }
+
+    var blob = new Blob([data], {type: 'text/json'}),
+        e    = document.createEvent('MouseEvents'),
+        a    = document.createElement('a')
+
+    a.download = filename
+    a.href = window.URL.createObjectURL(blob)
+    a.dataset.downloadurl =  ['text/json', a.download, a.href].join(':')
+    e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
+    a.dispatchEvent(e)
+    }
+
+//function that called to run the script
+orderlist = function createDataset() {
+    //object definitiion or template for data
+    class classOrder{constructor(orderId, salesOrder, fundId, fundName, placedDate, downloadDate, printDate, orderType, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four) {this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four}}
+
+    //for loop to increment inbetween orders
+    for (i = 0; i < x; i++) {
+        //first things first, zero out all variables.
+        orderId = salesOrder = fundId = fundName = placedDate = downloadDate = printDate = orderType = logoScript = priColor = secColor = logoId = eleven = eight = six = five = four = 0;
+        //check if an order is checked off for printing
+        checkChecked = orderRow[i].getElementsByClassName(constCheck)[0].getAttribute('class') == "toggled-on order-toggle"
+        if (checkChecked) {
+            //main body of the script for fetching the information from the page.
+            orderId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
+            salesOrder = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText
+            fundId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText
+            fundName = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText.split('(')[0].trim()
+            placedDate = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLPD.column].innerText
+            downloadDate = Date();
+            orderType = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText
+            logoScript = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[1]
+            priColor = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[2].split(':')[1].split('-')[0].trim()
+            secColor = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[2].split(':')[2].trim()
+            logoId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[0].split(' ')[1]
+            orderRowEl = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDF.column].innerText
+            logoCountsBySize = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText
+            for (j = 0;  j < (orderRowEl); j++) {
+                dsgnDtlEl = logoCountsBySize.split('\n')[j]
+                if (dsgnDtlEl.split(' ')[0] == "11x6") {
+                    eleven = dsgnDtlEl.split(' ')[2]
+                }
+                if (dsgnDtlEl.split(' ')[0] == "8x4") {
+                    eight = dsgnDtlEl.split(' ')[2]
+                }
+                if (dsgnDtlEl.split(' ')[0] == "6x3") {
+                    six = dsgnDtlEl.split(' ')[2]
+                }
+                if (dsgnDtlEl.split(' ')[0] == "5x3") {
+                    five = dsgnDtlEl.split(' ')[2]
+                }
+                if (dsgnDtlEl.split(' ')[0] == "4x3") {
+                    four = dsgnDtlEl.split(' ')[2]
+                }
+            }
+            //create return object (json?) for downloading.
+            orders[orderId] = new classOrder(
+                                  orderId, 
+                                  salesOrder,
+                                  fundId, 
+                                  fundName, 
+                                  placedDate,
+                                  downloadDate,
+                                  printDate,
+                                  orderType,
+                                  logoScript,
+                                  priColor,
+                                  secColor,
+                                  logoId,
+                                  eleven,
+                                  eight, 
+                                  six,
+                                  five, 
+                                  four
+                                )
+        }
+    }
+    return orders;
+}
+//console.log(orders)
+//orders = createDataset()
+
+function createDownloadButton() {
+    dlButtonTable = document.createElement('table')
+    dlButtonTable.setAttribute('id', 'tbl_savesearch')
+    dlButtonTable.setAttribute('class', 'uir-button')
+    dlbtbody = document.createElement('tbody')
+    dlbtr = document.createElement('tr')
+    dlbtr.setAttribute('id', 'tr_savesearch')
+    dlbtr.setAttribute('class', 'pgBntG pgBntB')
+    dlbtd = document.createElement('td')
+    dlbtd.setAttribute('id', 'tdbody_savesearch')
+    dlbtd.setAttribute('class', 'bntBgB')
+    jsonDl = document.createElement('input');
+    jsonDl.setAttribute('type', 'button')
+    jsonDl.setAttribute('value', 'create package')
+    jsonDl.setAttribute('class', 'rndbuttoninpt bntBgT');
+    jsonDl.setAttribute('onclick', 'console.save(orderlist(), "orders.json")');
+    dlbtd.appendChild(jsonDl)
+    dlbtr.appendChild(dlbtd)
+    dlbtbody.appendChild(dlbtr)
+    dlButtonTable.appendChild(dlbtbody)
+    currentDiv = document.getElementsByClassName('uir_control_bar')[0];
+    currentDiv.appendChild(dlButtonTable);
+}
+    
+var COUNTSELECTEDORDERS = document.getElementsByClassName('toggled-on order-toggle').length
+var PASTSELECTION = document.getElementsByClassName('uir-list-name')[0].innerText
+if (COUNTSELECTEDORDERS != PASTSELECTION) {
+    COUNTSELECTEDLOGOS = function() {
+        l = 0
+        for (k = 0; k < x; k++) {
+            if (orderRow[k].getElementsByClassName('toggled-on order-toggle')[0] && (orderRow[k].getElementsByTagName(orderCol)[1].innerText.split('\n')[2].split(' ')[0] != 'undefined')) {
+                l += parseInt(orderRow[k].getElementsByTagName(orderCol)[1].innerText.split('\n')[2].split(' ')[0])
+            }
+        }
+        return l
+    }
+    PASTSELECTION = COUNTSELECTEDORDERS
+    //console.log(COUNTSELECTEDORDERS)
+    document.getElementsByClassName('uir-list-name')[0].innerText = 'orders selected: ' + COUNTSELECTEDORDERS + ' number of 11x6: ' + COUNTSELECTEDLOGOS()
+}
+
+var eeyore
+if (eeyore != 'sad') {
+    createDownloadButton()
+    init()
+    eeyore = 'sad'
+}
