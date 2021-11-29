@@ -12,9 +12,11 @@ in the $profile, set the $sharedrive variable to an external drive ( to create a
 
 Quick overview of cmdlets
 >unhash			searches for files (gci) to find any that have unnecessary strings in the filename and trims the file name to remove the text. Also removes duplicate files.
+>check			check if internal and external slips all match up in pairs
 >yeet			gets a list of ORDERIDs from the filenames and creates a text file. The files are then moved up one directory in the default use. 
 	-o		[opt]moves the files to the OTF folder of the CURRENT WEEK's dir
 	-d		[opt]moves the files to the REORDER folder of the CURRENT WEEK's dir
 >yolo			takes the files from the list created with YEET and searches for those files to copy them to the VersaWorks printer queue folder. It then prints the requisite PDFs to the system default printer. Then a PDF is generated from the ORDERID of an order to create a package id label and printed to the label maker.
 		-p		[req] [1-4] Argument
 		-r		[opt] flag sends the files to the "C" queue of the selected printer in VersaWorks
+
