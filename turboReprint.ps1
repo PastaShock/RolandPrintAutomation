@@ -53,7 +53,7 @@ function LogoFinder($criteria) {
         #find all ordersIds that match search criteria
         $PackingSlip = OrderFinder $criteria $false
                 if ($null -ne $PackingSlip) {
-                    $ORDER = $REPRINTS.$criteria | Select-Object -f 1
+                    $ORDER = $ORDERS.$criteria | Select-Object -f 1
                     $script = $ORDER.logoScript
                     $fund_id = $ORDER.fundid
                     $placedOn = $Order.placedDate

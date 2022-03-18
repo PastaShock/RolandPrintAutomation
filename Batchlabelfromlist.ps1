@@ -7,7 +7,7 @@
 $reprints = Get-Content $DATABASE | ConvertFrom-Json
 
 Get-Content $labels | foreach-object $_ {
-    $orderinfo = $reprints.$_
+    $orderinfo = $reprints.$_ | select-object -f 1
     $script = $orderInfo.logoscript
     $orderid = $orderInfo.orderID
     $salesOrder = $orderInfo.salesOrder

@@ -41,11 +41,18 @@ orderRow = document.getElementsByClassName('uir-list-row-tr')
 //  order column
 orderCol = 'td'
 constCheck = 'order-toggle'
+verbBool = false;
 
 //setting up for the script
 
 x = orderRow.length
 //get column numbers for each piece of data:
+
+function verbosity(text) {
+    if (verbBool) {
+        console.log(text);
+    }
+}
 
 function getColumnNames() {
     headerRow = document.getElementsByClassName('uir-list-header-td')
@@ -53,23 +60,23 @@ function getColumnNames() {
         for (column in COLUMNS) {
             if (headerRow[h].innerText.trim() == COLUMNS[column].name) {
                 COLUMNS[column].column = h;
-               }
+            }
         }
     }
 }
 
 function init() {
     COLUMNS = {
-        "COLOI": {"column": "", "name": "ORDER ID"},                //ORDER ID
-        "COLFI": {"column": "", "name": "FUNDRAISER ID"},           //FUNDRAISER ID
-        "COLFN": {"column": "", "name": "FUNDRAISER"},              //FUNDRAISER - fund name
-        "COLPD": {"column": "", "name": "ORDERED"},                 //ORDERED - placed date
-        "COLOT": {"column": "", "name": "ORDER TYPE"},              //ORDER TYPE
-        "COLLD": {"column": "", "name": "LOGO DETAILS"},            //LOGO DETALS - scritpt, type, pri, sec
-        "COLDD": {"column": "", "name": "DESIGN DETAILS"},          //DESIGN DETAILS - qty of 11x, 8x, 6x... per size 
-        "COLDF": {"column": "", "name": "DESIGNS"},                 //DESIGNS - qty of logo sizes
-        "COLDL": {"column": "", "name": "ALL DESIGNS & SLIPS"},     //ALL DESIGNS AND SLIPS
-        "COLSO": {"column": "", "name": "REFERENCE #"}              //SALES ORDER ID NUMBER - for matching shipments
+        "COLOI": { "column": "", "name": "ORDER ID" },                //ORDER ID
+        "COLFI": { "column": "", "name": "FUNDRAISER ID" },           //FUNDRAISER ID
+        "COLFN": { "column": "", "name": "FUNDRAISER" },              //FUNDRAISER - fund name
+        "COLPD": { "column": "", "name": "ORDERED" },                 //ORDERED - placed date
+        "COLOT": { "column": "", "name": "ORDER TYPE" },              //ORDER TYPE
+        "COLLD": { "column": "", "name": "LOGO DETAILS" },            //LOGO DETALS - scritpt, type, pri, sec
+        "COLDD": { "column": "", "name": "DESIGN DETAILS" },          //DESIGN DETAILS - qty of 11x, 8x, 6x... per size 
+        "COLDF": { "column": "", "name": "DESIGNS" },                 //DESIGNS - qty of logo sizes
+        "COLDL": { "column": "", "name": "ALL DESIGNS & SLIPS" },     //ALL DESIGNS AND SLIPS
+        "COLSO": { "column": "", "name": "REFERENCE #" }              //SALES ORDER ID NUMBER - for matching shipments
     }
     getColumnNames()
     for (o = 0; o < (x); o++) {
@@ -81,10 +88,13 @@ function init() {
         }
     }
     for (j = 0; j < x; j++) {
+        verbosity('getting number of logo sizes per order ...')
         var NUMBEROFLOGOSPERORDER = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n').length
+        verbosity(` order ${orderId} has ${NUMBEROFLOGOSPERORDER} logo sizes`)
         for (f = 0; f < NUMBEROFLOGOSPERORDER; f++) {
             var LOGOCOUNTS = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n')[f]
-            if (LOGOCOUNTS.split('-')[0] == "11x6 ") {
+            let logoSizeDesignation = LOGOCOUNTS.split('-')[0].trim().toUpperCase();
+            if (logoSizeDesignation === '11X6' || logoSizeDesignation === 'DIGITAL') {
                 COUNTELEVEN[j] = LOGOCOUNTS.split(' - ')[1]
             }
         }
@@ -96,11 +106,11 @@ function init() {
         ORDERCOUNTDIV.appendChild(ORDERCOUNT)
         orderRow[j].getElementsByTagName(orderCol)[1].appendChild(ORDERCOUNTDIV)
     }
-//        if (document.getElementsByClassName('listEditSpan')[o] == "Weeding & Masking") {
-//         ORDERS_SELECTED[o] = true;
-//         } else {
-//             ORDERS_SELECTED[o] = false}
-//     }
+    //        if (document.getElementsByClassName('listEditSpan')[o] == "Weeding & Masking") {
+    //         ORDERS_SELECTED[o] = true;
+    //         } else {
+    //             ORDERS_SELECTED[o] = false}
+    //     }
 }
 
 function getHREF(d) {
@@ -112,10 +122,11 @@ function createToggle(ti) {
     let toggle = document.createElement("div")
     toggle.setAttribute('id', 'extreme-list-edit-button')
     toggle.setAttribute('class', 'toggled-off order-toggle')
-    toggle.setAttribute('tabindex', ti+1)
+    toggle.setAttribute('tabindex', ti + 1)
     toggle.setAttribute('role', 'button')
-    toggle.setAttribute('onclick', 'changeState('+ ti +')')
+    toggle.setAttribute('onclick', 'changeState(' + ti + ')')
     //toggle.setAttribute('href', getHREF(ti))
+    verbosity('created toggles for order row')
     return toggle
 }
 
@@ -124,8 +135,9 @@ function createOnClick(ti) {
     toggleHREF.setAttribute('href', 'javascript:void(0)')
     toggleHREF.setAttribute('onclick', getHREF(ti))
     toggleHREF.textContent = 'download'
+    verbosity('created onClick function in download button');
     return toggleHREF
-}    
+}
 
 function changeState(elStateToChange) {
     toggleEl = document.getElementsByClassName('order-toggle')[elStateToChange]
@@ -133,51 +145,95 @@ function changeState(elStateToChange) {
         toggleEl.setAttribute('class', 'toggled-on order-toggle')
         //set workflow stage to "Weeding and Masking"
         document.getElementById('lstinln_' + elStateToChange + '_0').innerText = 'Weeding & Masking'
+        verbosity(`set order ${elStateToChange} to weeding and masking`)
     } else {
         toggleEl.setAttribute('class', 'toggled-off order-toggle')
         //set workflow stage to "Printing"
         document.getElementById('lstinln_' + elStateToChange + '_0').innerText = "Printing"
+        verbosity(`set order ${elStateToChange} to printing`)
     }
 }
 
 
 //create a console save function to download the information of the order(s).
-console.save = function(data, filename){
+console.save = function (data, filename) {
 
-    if(!data) {
+    if (!data) {
         console.error('Console.save: No data')
         return;
     }
 
-    if(!filename) filename = 'console.json'
+    if (!filename) filename = 'console.json'
 
-    if(typeof data === "object"){
+    if (typeof data === "object") {
         data = JSON.stringify(data, undefined, 4)
     }
 
-    var blob = new Blob([data], {type: 'text/json'}),
-        e    = document.createEvent('MouseEvents'),
-        a    = document.createElement('a')
+    var blob = new Blob([data], { type: 'text/json' }),
+        e = document.createEvent('MouseEvents'),
+        a = document.createElement('a')
 
     a.download = filename
     a.href = window.URL.createObjectURL(blob)
-    a.dataset.downloadurl =  ['text/json', a.download, a.href].join(':')
+    a.dataset.downloadurl = ['text/json', a.download, a.href].join(':')
     e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
     a.dispatchEvent(e)
-    }
+}
 
 //function that called to run the script
 orderlist = function createDataset() {
     //object definitiion or template for data
-    class classOrder{constructor(orderId, salesOrder, fundId, fundName, placedDate, downloadDate, printDate, orderType, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four) {this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four}}
-
+    class classOrder { constructor(orderId, salesOrder, fundId, fundName, placedDate, downloadDate, printDate, orderType, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four, digital, digiSmall, sticker, banner) { this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four; this.digital = digital; this.digiSmall = digiSmall; this.sticker = sticker; this.banner = banner } }
+    verbosity('created class ClassOrder');
     //for loop to increment inbetween orders
-    for (i = 0; i < x; i++) {
+    for (let i = 0; i < x; i++) {
+        verbosity(`for loop i:${i}`);
         //first things first, zero out all variables.
-        orderId = salesOrder = fundId = fundName = placedDate = downloadDate = printDate = orderType = logoScript = priColor = secColor = logoId = eleven = eight = six = five = four = 0;
+        orderId = salesOrder = fundId = fundName = placedDate = downloadDate = printDate = orderType = logoScript = priColor = secColor = logoId = eleven = eight = six = five = four = digital = digiSmall = sticker = banner = 0;
+        verbosity('zeroed out all variables for JSON payload');
+        imageApplicationTypes = [
+            {
+                name: '11x6',
+                value: 0,
+            },
+            {
+                name: '8x4',
+                value: 0,
+            },
+            {
+                name: '6x3',
+                value: 0,
+            },
+            {
+                name: '5x3',
+                value: 0,
+            },
+            {
+                name: '4x3',
+                value: 0,
+            },
+            {
+                name: 'digital',
+                value: 0,
+            },
+            {
+                name: 'digital_small',
+                value: 0,
+            },
+            {
+                name: 'sticker',
+                value: 0,
+            },
+            {
+                name: 'banner',
+                value: 0,
+            },
+        ]
+        verbosity('initialized imageApplicationTypes');
         //check if an order is checked off for printing
         checkChecked = orderRow[i].getElementsByClassName(constCheck)[0].getAttribute('class') == "toggled-on order-toggle"
         if (checkChecked) {
+            verbosity('checkChecked = True');
             //main body of the script for fetching the information from the page.
             orderId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
             salesOrder = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText
@@ -192,44 +248,48 @@ orderlist = function createDataset() {
             logoId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[0].split(' ')[1]
             orderRowEl = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDF.column].innerText
             logoCountsBySize = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText
-            for (j = 0;  j < (orderRowEl); j++) {
+            verbosity(`orderId: ${orderId} \n salesOrder: ${salesOrder} \n fundId: ${fundId} \n fundName: ${fundName} \n placedDate: ${placedDate} \n downloadDate: ${downloadDate} \n orderType: ${orderType} \n logoScript: ${logoScript}`)
+            for (let j = 0; j < logoCountsBySize.split('\n').length; j++) {
+                verbosity(`for loop j:${j}/${orderRowEl}`);
+                verbosity(`orderRowEl: ${orderRowEl} \t logoCountsBySize: ${logoCountsBySize.split('\n').length}`)
                 dsgnDtlEl = logoCountsBySize.split('\n')[j]
-                if (dsgnDtlEl.split(' ')[0] == "11x6") {
-                    eleven = dsgnDtlEl.split(' ')[2]
+                // nested for loop to loop through the various logo/file sizes/names
+                for (let k = 0; k < imageApplicationTypes.length; k++) {
+                    verbosity(`for loop k:${k}`)
+                    if (dsgnDtlEl.split(' ')[0].toUpperCase() === imageApplicationTypes[k].name.toUpperCase()) {
+                        verbosity(`imageApplicationTypes[${k}] (${imageApplicationTypes[k].name}) matched to order information`)
+                        verbosity(`current ${imageApplicationTypes[k].name} logo count: ${imageApplicationTypes[k].value}`)
+                        verbosity(`adding ${dsgnDtlEl.split(' ')[2]} to ${imageApplicationTypes[k].value}`);
+                        imageApplicationTypes[k].value += Number(dsgnDtlEl.split(' ')[2])
+                        verbosity(`Index: ${i}:${j}:${k} \t logo: ${imageApplicationTypes[k].name} \t qty: ${imageApplicationTypes[k].value}`)
+                    }
                 }
-                if (dsgnDtlEl.split(' ')[0] == "8x4") {
-                    eight = dsgnDtlEl.split(' ')[2]
-                }
-                if (dsgnDtlEl.split(' ')[0] == "6x3") {
-                    six = dsgnDtlEl.split(' ')[2]
-                }
-                if (dsgnDtlEl.split(' ')[0] == "5x3") {
-                    five = dsgnDtlEl.split(' ')[2]
-                }
-                if (dsgnDtlEl.split(' ')[0] == "4x3") {
-                    four = dsgnDtlEl.split(' ')[2]
-                }
-            }
+            } 
             //create return object (json?) for downloading.
             orders[orderId] = new classOrder(
-                                  orderId, 
-                                  salesOrder,
-                                  fundId, 
-                                  fundName, 
-                                  placedDate,
-                                  downloadDate,
-                                  printDate,
-                                  orderType,
-                                  logoScript,
-                                  priColor,
-                                  secColor,
-                                  logoId,
-                                  eleven,
-                                  eight, 
-                                  six,
-                                  five, 
-                                  four
-                                )
+                orderId,
+                salesOrder,
+                fundId,
+                fundName,
+                placedDate,
+                downloadDate,
+                printDate,
+                orderType,
+                logoScript,
+                priColor,
+                secColor,
+                logoId,
+                imageApplicationTypes[0].value,
+                imageApplicationTypes[1].value,
+                imageApplicationTypes[2].value,
+                imageApplicationTypes[3].value,
+                imageApplicationTypes[4].value,
+                imageApplicationTypes[5].value,
+                imageApplicationTypes[6].value,
+                imageApplicationTypes[7].value,
+                imageApplicationTypes[8].value
+            )
+            verbosity(`created class ClassOrder with data: ${JSON.stringify(orders)}`)
         }
     }
     return orders;
@@ -259,12 +319,17 @@ function createDownloadButton() {
     dlButtonTable.appendChild(dlbtbody)
     currentDiv = document.getElementsByClassName('uir_control_bar')[0];
     currentDiv.appendChild(dlButtonTable);
+    verbosity('created download button')
 }
-    
+
+// define the set of currently selected orders and previously selected orders to compare one against the other
 var COUNTSELECTEDORDERS = document.getElementsByClassName('toggled-on order-toggle').length
+verbosity(`COUNTSELECTEDORDERS: ${COUNTSELECTEDORDERS}`)
 var PASTSELECTION = document.getElementsByClassName('uir-list-name')[0].innerText
+verbosity(`PASTSELECTION: ${PASTSELECTION}`)
 if (COUNTSELECTEDORDERS != PASTSELECTION) {
-    COUNTSELECTEDLOGOS = function() {
+    verbosity('COUNTSELECTEDORDERS does not equal PASTSELECTION')
+    COUNTSELECTEDLOGOS = function () {
         l = 0
         for (k = 0; k < x; k++) {
             if (orderRow[k].getElementsByClassName('toggled-on order-toggle')[0] && (orderRow[k].getElementsByTagName(orderCol)[1].innerText.split('\n')[2].split(' ')[0] != 'undefined')) {
@@ -276,11 +341,67 @@ if (COUNTSELECTEDORDERS != PASTSELECTION) {
     PASTSELECTION = COUNTSELECTEDORDERS
     //console.log(COUNTSELECTEDORDERS)
     document.getElementsByClassName('uir-list-name')[0].innerText = 'orders selected: ' + COUNTSELECTEDORDERS + ' number of 11x6: ' + COUNTSELECTEDLOGOS()
+    verbosity('updated page header')
 }
 
+//RunOnce section
+//eeyore exists to track if the script has been run yet
+//the varibale is declared but not defined so that it is run everytime the page is reloaded
+//but not when the user is interacting with it.
 var eeyore
-if (eeyore != 'sad') {
-    createDownloadButton()
-    init()
-    eeyore = 'sad'
+
+//create function that returns a promise
+function resolveFirstStart() {
+    return new Promise(resolve => {
+        //timout delay could be a function that takes a while to run
+        setTimeout(() => {
+            //createDownloadButton and init can be their own promise returns
+            createDownloadButton();
+            init();
+            //this is what is returned once this function runs
+            resolve('Initialized');
+        }, 750);
+    });
 }
+
+//async function to call the resolve and log the result, JS interpreter will execute this one completely with its subroutines
+async function asyncFirstStart() {
+    console.log('Starting initialization');
+    const result = await resolveFirstStart();
+    console.log(result);
+}
+
+function quickDL() {
+    var j = 0;
+
+    // get checked orders
+    var checkedOrders = [];
+    for (var i = 0; i < orderRow.length; i++) {
+        var currentIterableRow = orderRow[i].getElementsByTagName(orderCol)[0];
+        if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
+            console.log(orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText)
+            checkedOrders.push(i)
+        }
+    }
+    timeoutLoop = setInterval(() => {
+        if (checkedOrders.length < 1) {
+            clearTimeout(timeoutLoop);
+            console.log('timeout cleared');
+        }
+        var currentIterableRow = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[0];
+        if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
+            clickCell = currentIterableRow.getElementsByTagName('a')[0].onclick();
+        }
+        j++;
+        if (j === checkedOrders.length) { clearInterval(timeoutLoop) }
+    }, 3000)
+}
+
+// check if eeyore is sad,   
+if (eeyore != 'sad') {
+    //call the async function to initialize the webpage
+    asyncFirstStart();
+    //   document.head.appendChild(styleSheet)
+    //set eeyore to 'sad' to only run this code block once.
+    eeyore = 'sad';
+};
