@@ -45,10 +45,10 @@ $dir = get-location;
 #write-output "dir: $dir"
 $orders = get-childitem -path $dir\\* -include 'orders.json' -r
 $orders = get-content $orders | convertfrom-json
-# $toAdd = @()
-# $toAdd += get-content $DATABASE | convertfrom-json
-# $toAdd += $orders
-# set-content -path $DATABASE -value ($toAdd | convertto-json)
+$toAdd = @()
+$toAdd += get-content $DATABASE | convertfrom-json
+$toAdd += $orders
+set-content -path $DATABASE -value ($toAdd | convertto-json)
 write-output "orders: $orders"
 $list = $orders | Get-Member
 $list = ($list | select-object -property 'Name')

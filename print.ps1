@@ -4,23 +4,23 @@
 #FOR NETSUITE; VERSION 1
 
 [cmdletbinding()]
-    Param(
-        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-        [Alias("orderID", "i")]
-        #[ValidatePattern("^\d{6}$")]
-        [String[]] $ID,
-        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-        [Alias("printer", "p")]
-        [ValidateRange(1,4)]
-        [int] $desiredPrinter,
-        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
-        [Alias("queue", "q")]
-        [ValidateRange(1,5)]
-        [int] $desiredQueue,
-        [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
-        [Alias("type", "t")]
-        [switch] $orderType
-    )
+Param(
+    [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+    [Alias("orderID", "i")]
+    #[ValidatePattern("^\d{6}$")]
+    [String[]] $ID,
+    [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+    [Alias("printer", "p")]
+    [ValidateRange(1, 4)]
+    [int] $desiredPrinter,
+    [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+    [Alias("queue", "q")]
+    [ValidateRange(1, 5)]
+    [int] $desiredQueue,
+    [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
+    [Alias("type", "t")]
+    [switch] $orderType
+)
 
 $logDate = get-date -Format "dd-MM-yy"
 $logName = "$logdate.txt"
@@ -31,13 +31,37 @@ $logFullName = "$printLogs\$logName"
 $divider = "---------------"
 #create a list of order ids from the json file
 $orders = Get-ChildItem -path $PWD -include 'orders.json' -r 
-if ($null -eq $orders) {return}
+if ($null -eq $orders) { return }
 $orders = get-content $orders | convertfrom-json
 $list = $orders | Get-Member
 $list = ($list | select-object -property 'Name')
 #$brother = "\\WAREHOUSE-SHIPP\Brother PT-D600"
 
-Add-Type -AssemblyName PresentationCore,PresentationFramework
+Add-Type -AssemblyName PresentationCore, PresentationFramework
+
+class Logos {
+    [string]$name
+    [int]$value
+
+    Logos(
+        [string]$name,
+        [int]$value
+    ){
+        $this.name = $name
+        $this.value = $value
+    }
+} 
+        $logoSizesByApplication = @(
+            [Logos]::new('eleven', 0 ),
+            [Logos]::new('eight', 0 ),
+            [Logos]::new('six', 0 ),
+            [Logos]::new('five', 0 ),
+            [Logos]::new('four', 0 ),
+            [Logos]::new('digital', 0 ),
+            [Logos]::new('digiSmall', 0 ),
+            [Logos]::new('sticker', 0 ),
+            [Logos]::new('banner', 0 )
+        )
 
 function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     $printer = @("Mary-Kate", "Ashley", "Nicole", "Rolanda")
@@ -45,25 +69,25 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     $queue = "C:\ProgramData\Roland DG VersaWorks\VersaWorks\Printers\" + $printer[$p] + "\Input-" + $Q[$i]
     #prompt user for ID
     #Find INTERNAL PACKING SLIP PDF with ID match in filename
-    $intPath = (Get-ChildItem -path ($shareDrive+"AA*") -include "PICKINGTICKET$orderID.pdf" -r) | Select-Object -f 1
-    $orderDir = $intPath.directory.FullName+"\*"
+    $intPath = (Get-ChildItem -path ($shareDrive + "AA*") -include "PICKINGTICKET$orderID.pdf" -r) | Select-Object -f 1
+    $orderDir = $intPath.directory.FullName + "\*"
     #prompt user to cancel if the order is OTF
     #$bool = Read-Host -Prompt 'is this order OTF?'
-    if ($bool) {return}
+    if ($bool) { return }
 
     #internal PDF picking slip section------------------------------------
-        #if the PDF is not found, get it from the warehouse dash in chrome
-    # if ($null -eq $intPath) {
-    #     chrome "https://www.snap-raise.com/warehouse/reports/order?order_id=$orderID"
-    #     Write-Output "Internal slip was not found. Downloaded Order - $orderID.pdf from Chrome."
-    #     Write-Output "retrying.."
-    #     start-sleep -seconds 1
-    #     $intPath = (Get-ChildItem -path ($shareDrive+"AA*") -include "PICKINGTICKET$orderID.pdf" -r)
-    # }
+    #if the PDF is not found, get it from the warehouse dash in chrome
+    if ($null -eq $intPath) {
+        chrome "https://www.snap-raise.com/warehouse/reports/order?order_id=$orderID"
+        Write-Output "Internal slip was not found. Downloaded Order - $orderID.pdf from Chrome."
+        Write-Output "retrying.."
+        start-sleep -seconds 1
+        $intPath = (Get-ChildItem -path ($shareDrive+"AA*") -include "PICKINGTICKET$orderID.pdf" -r)
+    }
     #print the internal picking slip PDF
     $intPath | foreach-object {
-        start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object{
-           Start-Sleep 1;
+        start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object {
+            Start-Sleep 1;
         } | Stop-Process
     }
 
@@ -79,14 +103,14 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     $priColor = $orders.$orderID | Select-Object -expandproperty 'priColor'
     $secColor = $orders.$orderID | Select-Object -expandproperty 'secColor'
     #Logging to console:
-    if ($null -eq $script) { write-host -ForegroundColor Red "no logo script!"; return} else {
+    if ($null -eq $script) { write-host -ForegroundColor Red "no logo script!"; return } else {
         Write-Output $orderID
         Write-Output $salesID
         write-Output "`t$script"
         Write-Output "`t$fund_id"
         Write-Output "`t$placedOn"
         #logging to the log file on the HDD
-        appendLog ("  id:`t"+$orderID)
+        appendLog ("  id:`t" + $orderID)
         appendLog "fund:`t$fund_id"
         appendLog "date:`t$placedOn"
         #appendLog "dnld:`t$downloadDate"
@@ -96,8 +120,9 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         appendLog "prim:`t$priColor"
         appendLog "secd:`t$secColor"
     }
-    set-content orders.json ($orders | convertto-json)
 
+    set-content orders.json ($orders | convertto-json)
+    
     #Setup for printing a package label:
     $escapedScript = $script -replace "\|", ""
     
@@ -106,84 +131,71 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     #search for the logos in the HDD, in relevant directories and move them to the auto-queue for Versaworks
 
-#      WARNING: DUPLICATE ORDERS WILL NOT BE FILTERED OUT!
+    #      WARNING: DUPLICATE ORDERS WILL NOT BE FILTERED OUT!
 
     if ($script -and $fund_id) {
+        # write-output "searching for and copying order files to ../ dir and to printer/queue/ dir"
         $searchResult = Get-ChildItem -path $orderdir -include "$fund_id*.eps" -Recurse
 
         $searchResult | ForEach-Object {
             $filename = $_.Name
             $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i]
             Write-Output "`tcopying $filename to $dirShortName";
-        Copy-Item -path $_.FullName -destination $queue
+            Copy-Item -path $_.FullName -destination $queue
         }
 
-        #logo sizes obfuscation
-        $11x = 0;
-        $8x = 0;
-        $6x = 0;
-        $5x = 0;
-        $4x = 0;
-
-        if(get-member -inputobject $orders.$orderID -name 'eleven' -membertype Properties) {
-            $11x = [psCustomObject]@{name = "11x6"; value = $orders.$orderID | Select-Object -expandproperty 'eleven'}
-        }
-        if(get-member -inputobject $orders.$orderID -name 'eight' -membertype Properties) {
-            $8x = [psCustomObject]@{name = "8x4"; value = $orders.$orderID | Select-Object -expandproperty 'eight'}
-        }
-        if(get-member -inputobject $orders.$orderID -name 'six' -membertype Properties) {
-            $6x = [psCustomObject]@{name = "6x3"; value = $orders.$orderID | Select-Object -expandproperty 'six'}
-        }
-        if(get-member -inputobject $orders.$orderID -name 'five' -membertype Properties) {
-            $5x = [psCustomObject]@{name = "5x3"; value = $orders.$orderID | Select-Object -expandproperty 'five'}
-        }
-        if(get-member -inputobject $orders.$orderID -name 'four' -membertype Properties) {
-            $4x = [psCustomObject]@{name = "4x3"; value = $orders.$orderID | Select-Object -expandproperty 'four'}
+        for ($i = 0; $i -lt $logoSizesByApplication.length; $i++) {
+            if (Get-Member -InputObject $orders.$orderID -name $logoSizesByApplication[$i].name -MemberType Properties) {
+                $logoSizesByApplication[$i].value = 0;
+                $logoSizesByApplication[$i].value = $orders.$orderID | Select-Object -ExpandProperty $logoSizesByApplication[$i].name 
+            }
         }
 
-        $logoSizesArray = @($11x, $8x, $6x, $5x, $4x);
-        for ($i = 0; $i -lt $logoSizesArray.Length; $i++) {
-            if ($logoSizesArray[$i].name -ne "11x6") {
-                $space = " ";
-                } else {
-                    $space = ""
-                };
-                if ($logoSizesArray[$i].value -gt 0) {
-                    write-host -nonewline "`t"$space $logoSizesArray[$i].name":`t"$logoSizesArray[$i].value"`n"
-                    appendLog ($space + $logoSizesArray[$i].name + ":`t" + $logoSizesArray[$i].value)
-                }
+        for ($i = 0; $i -lt $logoSizesByApplication.Length; $i++) {
+            if ($logoSizesByApplication[$i].name -ne "11x6") {
+                $space = "";
+            }
+            else {
+                $space = ""
+            };
+            if ($logoSizesByApplication[$i].value -gt 0) {
+                write-host -nonewline "`t"$space $logoSizesByApplication[$i].name":`t"$logoSizesByApplication[$i].value"`n"
+                appendLog ($space + $logoSizesByApplication[$i].name + ":`t" + $logoSizesByApplication[$i].value)
+            }
         }
     }
-    
-    start-sleep -Seconds 2
 
-    #find EXTERNAL PACKING SLIP PDF doc with order ID match in filename and print through acrobat
+    # Start sleep to add delay to keep order forms in the correct positions after printing.
+    # Internal/picking slip; should be first, then the external/packing
+    # start-sleep -Seconds 2
+
+    # find EXTERNAL PACKING SLIP PDF doc with order ID match in filename and print through acrobat
 
     $pdfPath = Get-ChildItem -path $orderDir -include "SalesOrd_$orderID.pdf" -r | Select-Object -f 1
-    # if ($null -eq $pdfPath) {
-    #     chrome "https://www.snap-raise.com/warehouse/reports/all_order_items_packing_slip?order_id=$orderID"
-    #     Write-Output 'downloading All Items Packing Slip PDF...'
-    #     Start-Sleep -seconds 1
-    #     $pdfPath = Get-ChildItem -path $orderDir -include "order-$orderID.pdf" -r;
-    # }
+    if ($null -eq $pdfPath) {
+        chrome "https://www.snap-raise.com/warehouse/reports/all_order_items_packing_slip?order_id=$orderID"
+        Write-Output 'downloading All Items Packing Slip PDF...'
+        Start-Sleep -seconds 1
+        $pdfPath = Get-ChildItem -path $orderDir -include "order-$orderID.pdf" -r;
+    }
     $pdfPath | foreach-object {
-        start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object{
-           Start-Sleep 2;
+        start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object {
+            Start-Sleep 2;
         } | Stop-Process
     }
-        $dump = Get-Content orders.json
-        add-content -path "$shareDrive\temp\$user`_orders.json" -value ",$dump"
-        #remove-item 'orders.json'
+    $dump = Get-Content orders.json
+    add-content -path "$shareDrive\temp\$user`_orders.json" -value ",$dump"
+    # remove-item 'orders.json'
     Write-Output "`tFiles Sent to Printers Successfully"
     return
 }
-function LogoScriptWildcarder($unsearchable){
+function LogoScriptWildcarder($unsearchable) {
     if ($unsearchable.split("{|}").length -eq 3) {
         $split = $unsearchable.split("{|}")
         $unsearchable = $split[0] + "*" + $split[2]
     }
-    $theReplacers = @("\*\*\*","\*\*","track\*and\*field","track\*&\*field","swim\*and\*dive","swim\*&\*dive","swimming","volleyball","basketball")
-    $theReplacements = @("*","*","track","track","swim","swim","swim","volley","b*ball")
+    $theReplacers = @("\*\*\*", "\*\*", "track\*and\*field", "track\*&\*field", "swim\*and\*dive", "swim\*&\*dive", "swimming", "volleyball", "basketball")
+    $theReplacements = @("*", "*", "track", "track", "swim", "swim", "swim", "volley", "b*ball")
     $searchable = $unsearchable -replace "\|", "*"      #replace pipe
     $searchable = $searchable -replace " ", "*"         #replace whitespace
     $searchable = $searchable -replace "\.", "*"        #replace periods
@@ -191,12 +203,13 @@ function LogoScriptWildcarder($unsearchable){
     $searchable = $searchable -replace "\d"             #replace digits
     for ($i = 0; $i -lt $theReplacers.length; $i++) {
         if ($searchable -match $theReplacers[$i]) {
-            $searchable = $searchable -replace $theReplacers[$i],$theReplacements[$i]
+            $searchable = $searchable -replace $theReplacers[$i], $theReplacements[$i]
         }
     }
     if ($searchable -match "\*$") {
         return $searchable
-    } else {
+    }
+    else {
         $searchable + '*'
     }
 }
@@ -208,8 +221,11 @@ function appendLog($textToLog) {
 
 if ($ID -And $desiredPrinter -And $desiredQueue -And $orderType) {
     PrintIncentiveOrder $ID ($desiredPrinter - 1) ($desiredQueue - 1) $orderType
-} Elseif ($ID -And $desiredPrinter -And $desiredQueue) {
+}
+Elseif ($ID -And $desiredPrinter -And $desiredQueue) {
     PrintIncentiveOrder $ID ($desiredPrinter - 1) ($desiredQueue - 1)
-} Elseif ($ID -And $desiredPrinter) {
+}
+Elseif ($ID -And $desiredPrinter) {
     PrintIncentiveOrder $ID ($desiredPrinter - 1) 0
-} Else { return }
+}
+Else { return }
