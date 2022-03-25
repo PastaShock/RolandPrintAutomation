@@ -90,13 +90,23 @@ function init() {
     for (j = 0; j < x; j++) {
         verbosity('getting number of logo sizes per order ...')
         var NUMBEROFLOGOSPERORDER = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n').length
+        orderId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
         verbosity(` order ${orderId} has ${NUMBEROFLOGOSPERORDER} logo sizes`)
         for (f = 0; f < NUMBEROFLOGOSPERORDER; f++) {
             var LOGOCOUNTS = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n')[f]
-            let logoSizeDesignation = LOGOCOUNTS.split('-')[0].trim().toUpperCase();
-            if (logoSizeDesignation === '11X6' || logoSizeDesignation === 'DIGITAL') {
-                COUNTELEVEN[j] = LOGOCOUNTS.split(' - ')[1]
+            let logoSizeDesignation = LOGOCOUNTS.split('-')[0].toUpperCase();
+            if (!COUNTELEVEN[j]) {
+                COUNTELEVEN[j] = 0;
             }
+            if (logoSizeDesignation === '11X6' || logoSizeDesignation === 'DIGITAL') {
+                verbosity(`\t intial: ${COUNTELEVEN[j]}`)
+                verbosity(`\t\t unParsed: ${LOGOCOUNTS.split(' - ')[1].split(' ')[0].trim()}`)
+                verbosity(`\t\t Parsed: ${parseInt(LOGOCOUNTS.split(' - ')[1].split(' ')[0].trim())}`)
+                let parsed = parseInt(LOGOCOUNTS.split(' - ')[1].split(' ')[0].trim());
+                COUNTELEVEN[j] += parsed;
+                verbosity(`\t DIGITAL: ${COUNTELEVEN[j]}`);
+            }
+            verbosity(`\n\t\tLogos: ${orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n')[f]}`)
         }
         ORDERCOUNTDIV = document.createElement('div')
         ORDERCOUNTDIV.setAttribute('class', 'LENINGRAD')
@@ -221,6 +231,10 @@ orderlist = function createDataset() {
                 value: 0,
             },
             {
+                name: 'embroidery',
+                value: 0,
+            },
+            {
                 name: 'sticker',
                 value: 0,
             },
@@ -235,7 +249,6 @@ orderlist = function createDataset() {
         if (checkChecked) {
             verbosity('checkChecked = True');
             //main body of the script for fetching the information from the page.
-            orderId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
             salesOrder = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText
             fundId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText
             fundName = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText.split('(')[0].trim()
@@ -264,7 +277,7 @@ orderlist = function createDataset() {
                         verbosity(`Index: ${i}:${j}:${k} \t logo: ${imageApplicationTypes[k].name} \t qty: ${imageApplicationTypes[k].value}`)
                     }
                 }
-            } 
+            }
             //create return object (json?) for downloading.
             orders[orderId] = new classOrder(
                 orderId,
