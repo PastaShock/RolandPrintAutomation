@@ -68,38 +68,42 @@ for ($i = 4; $i -lt $list.length; $i++) {
         #write-output "fund id: $FUNDID"
         add-content -path $printlist -value $ORDERID
         # [case] normal order
-        if ($Printer -ne $true -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
+        if ($Printer -lt 1 -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
             #Moving files up one directory to the folder for the current week.
+            Write-Host  -foregroundcolor yellow "no options selected: moving orders up one level."
             move-item "*$FUNDID*.eps" .. -Force;
             move-item "*$ORDERID*.pdf" .. -Force;
             #remove-item *;
         }
         #[case] OTF
         if ($Printer -ne $true -and $o -eq $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
+            Write-Host  -foregroundcolor yellow "option OTF selected: moving to ../OTF";
             #move files ot the OTF directory
-            move-Item "*$FUNDID*.eps" ..\otf -Force;
+            move-item "*$FUNDID*.eps" ..\otf -Force;
             move-item "*$ORDERID*.pdf" ..\otf -Force;
         }
         #[case] Reorder
         if ($Printer -ne $true -and $o -ne $true -and $roll -ne $true -and $d -eq $true -and $x -ne $true) {
+            Write-Host  -foregroundcolor yellow "option reorder selected: moving to ../reorder";
             #move files ot the OTF directory
-            move-Item "*$FUNDID*.eps" ..\Reorder -Force;
+            move-item "*$FUNDID*.eps" ..\Reorder -Force;
             move-item "*$ORDERID*.pdf" ..\Reorder -Force;
         }
         #[case] Rolanda
         if ($Printer -ne $true -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -eq $true) {
+            write-host -foregroundcolor yellow 'sending files to \Rolanda'
             #moves files to the Reorder dir
             move-item "*$FUNDID*.eps" ..\Rolanda;
             move-item "*$ORDERID*.pdf" ..\Rolanda;
-            write-host -foregroundcolor yellow 'sending files to \Rolanda'
         }
         # [case] Roll
-        if ($Printer -ne $false -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
+        if ($Printer -gt 1 -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
             # moves files to Rolanda dir
             $DESTINATION = $ROOTDIR + "\" + $rollfile + $Printer
-            #$DESTINATION
+            $DESTINATION
             move-item "$FUNDID*.eps" $DESTINATION -Force;
             move-item "*$ORDERID.pdf" $DESTINATION -Force;
+            write-host -foregroundcolor yellow "option roll selected: moving orders to $DESTINATION"
         }
     }
 }
