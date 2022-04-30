@@ -87,13 +87,13 @@ function init() {
             //setTimeout(console.log('setTimeout(100ms)'), 100)
         }
     }
-    for (j = 0; j < x; j++) {
+    for (let j = 0; j < x; j++) {
         verbosity('getting number of logo sizes per order ...')
-        var NUMBEROFLOGOSPERORDER = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n').length
-        orderId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
+        const NUMBEROFLOGOSPERORDER = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n').length
+        const orderId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
         verbosity(` order ${orderId} has ${NUMBEROFLOGOSPERORDER} logo sizes`)
         for (f = 0; f < NUMBEROFLOGOSPERORDER; f++) {
-            var LOGOCOUNTS = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n')[f]
+            const LOGOCOUNTS = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n')[f].trim();
             let logoSizeDesignation = LOGOCOUNTS.split('-')[0].toUpperCase();
             if (!COUNTELEVEN[j]) {
                 COUNTELEVEN[j] = 0;
@@ -199,7 +199,7 @@ orderlist = function createDataset() {
     for (let i = 0; i < x; i++) {
         verbosity(`for loop i:${i}`);
         //first things first, zero out all variables.
-        orderId = salesOrder = fundId = fundName = placedDate = downloadDate = printDate = orderType = logoScript = priColor = secColor = logoId = eleven = eight = six = five = four = digital = digiSmall = sticker = banner = 0;
+        // orderId = salesOrder = fundId = fundName = placedDate = downloadDate = printDate = orderType = logoScript = priColor = secColor = logoId = eleven = eight = six = five = four = digital = digiSmall = sticker = banner = 0;
         verbosity('zeroed out all variables for JSON payload');
         imageApplicationTypes = [
             {
@@ -247,18 +247,60 @@ orderlist = function createDataset() {
         //check if an order is checked off for printing
         checkChecked = orderRow[i].getElementsByClassName(constCheck)[0].getAttribute('class') == "toggled-on order-toggle"
         if (checkChecked) {
+            const orderId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
             verbosity('checkChecked = True');
             //main body of the script for fetching the information from the page.
-            salesOrder = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText
+            salesOrder = () => {
+                try {
+                    return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText;
+                }
+                catch (err) {
+                    console.log('sales order ID not found, cancelling script');
+                    throw 'invalid salesOrder ID number';
+                }
+            };
             fundId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText
             fundName = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText.split('(')[0].trim()
             placedDate = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLPD.column].innerText
             downloadDate = Date();
             orderType = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText
-            logoScript = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[1]
-            priColor = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[2].split(':')[1].split('-')[0].trim()
-            secColor = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[2].split(':')[2].trim()
-            logoId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[0].split(' ')[1]
+            logoScript = () => {
+                try {
+                    if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[1] === undefined) {
+                        throw err
+                    } else {
+                        return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[1];
+                    }
+                } catch (err) {
+                    console.log('no logo script was detected');
+                    return 'null';
+                }
+            };
+            priColor = () => {
+                try {
+                    return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[2].split(':')[1].split('-')[0].trim();
+                } catch (err) {
+                    return 'null';
+                }
+            };
+            secColor = () => {
+                try {
+                    return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[2].split(':')[2].trim();
+                } catch (err) {
+                    return 'null';
+                }
+            };
+            logoId = () => {
+                try {
+                    if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[0].split(' ')[1] === undefined) {
+                        throw err
+                    } else {
+                        return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[0].split(' ')[1];
+                    }
+                } catch (err) {
+                    return 'null';
+                }
+            };
             orderRowEl = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDF.column].innerText
             logoCountsBySize = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText
             verbosity(`orderId: ${orderId} \n salesOrder: ${salesOrder} \n fundId: ${fundId} \n fundName: ${fundName} \n placedDate: ${placedDate} \n downloadDate: ${downloadDate} \n orderType: ${orderType} \n logoScript: ${logoScript}`)
@@ -281,17 +323,17 @@ orderlist = function createDataset() {
             //create return object (json?) for downloading.
             orders[orderId] = new classOrder(
                 orderId,
-                salesOrder,
+                salesOrder(),
                 fundId,
                 fundName,
                 placedDate,
                 downloadDate,
                 printDate,
                 orderType,
-                logoScript,
-                priColor,
-                secColor,
-                logoId,
+                logoScript(),
+                priColor(),
+                secColor(),
+                logoId(),
                 imageApplicationTypes[0].value,
                 imageApplicationTypes[1].value,
                 imageApplicationTypes[2].value,
@@ -336,24 +378,37 @@ function createDownloadButton() {
 }
 
 // define the set of currently selected orders and previously selected orders to compare one against the other
-var COUNTSELECTEDORDERS = document.getElementsByClassName('toggled-on order-toggle').length
-verbosity(`COUNTSELECTEDORDERS: ${COUNTSELECTEDORDERS}`)
-var PASTSELECTION = document.getElementsByClassName('uir-list-name')[0].innerText
-verbosity(`PASTSELECTION: ${PASTSELECTION}`)
-if (COUNTSELECTEDORDERS != PASTSELECTION) {
-    verbosity('COUNTSELECTEDORDERS does not equal PASTSELECTION')
-    COUNTSELECTEDLOGOS = function () {
-        l = 0
-        for (k = 0; k < x; k++) {
-            if (orderRow[k].getElementsByClassName('toggled-on order-toggle')[0] && (orderRow[k].getElementsByTagName(orderCol)[1].innerText.split('\n')[2].split(' ')[0] != 'undefined')) {
-                l += parseInt(orderRow[k].getElementsByTagName(orderCol)[1].innerText.split('\n')[2].split(' ')[0])
-            }
-        }
-        return l
+var COUNTSELECTEDORDERS = () => {
+    try {
+        return document.getElementsByClassName('toggled-on order-toggle').length;
+    } catch (err) {
+        throw err;
     }
-    PASTSELECTION = COUNTSELECTEDORDERS
-    //console.log(COUNTSELECTEDORDERS)
-    document.getElementsByClassName('uir-list-name')[0].innerText = 'orders selected: ' + COUNTSELECTEDORDERS + ' number of 11x6: ' + COUNTSELECTEDLOGOS()
+};
+var PASTSELECTION = () => {
+    try {
+        let val = parseInt(document.getElementsByClassName('uir-list-name')[0].innerText.split(' ')[1].trim())
+        if (val === '-') { return 0; } else { return val; };
+    } catch (err) {
+        return 0;
+    }
+};
+if (COUNTSELECTEDORDERS() != PASTSELECTION()) {
+    verbosity(`PASTSELECTION: ${PASTSELECTION()}`)
+    verbosity(`COUNTSELECTEDORDERS: ${COUNTSELECTEDORDERS()}`)
+    verbosity('COUNTSELECTEDORDERS does not equal PASTSELECTION')
+    COUNTSELECTEDLOGOS = () => {
+        let l = 0
+        for (let k = 0; k < x; k++) {
+            if (orderRow[k].getElementsByClassName('toggled-on order-toggle')[0] && orderRow[k].getElementsByTagName(orderCol)[1].innerText.split('\n')[2].split(' ')[0] ) {
+                l += parseInt(orderRow[k].getElementsByTagName(orderCol)[1].innerText.split('\n')[2].split(' ')[0])
+            };
+        };
+        return l
+    };
+    // PASTSELECTION() = COUNTSELECTEDORDERS();
+    //console.log(COUNTSELECTEDORDERS());
+    document.getElementsByClassName('uir-list-name')[0].innerText = 'orders selected: ' + COUNTSELECTEDORDERS() + ' number of 11x6: ' + COUNTSELECTEDLOGOS()
     verbosity('updated page header')
 }
 
@@ -389,8 +444,8 @@ function quickDL() {
 
     // get checked orders
     var checkedOrders = [];
-    for (var i = 0; i < orderRow.length; i++) {
-        var currentIterableRow = orderRow[i].getElementsByTagName(orderCol)[0];
+    for (let i = 0; i < orderRow.length; i++) {
+        let currentIterableRow = orderRow[i].getElementsByTagName(orderCol)[0];
         if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
             console.log(orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText)
             checkedOrders.push(i)
@@ -401,7 +456,7 @@ function quickDL() {
             clearTimeout(timeoutLoop);
             console.log('timeout cleared');
         }
-        var currentIterableRow = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[0];
+        let currentIterableRow = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[0];
         if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
             clickCell = currentIterableRow.getElementsByTagName('a')[0].onclick();
         }
