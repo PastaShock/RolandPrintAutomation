@@ -59,16 +59,17 @@ function LogoFinder($criteria) {
                     $placedOn = $Order.placedDate
                     $color = "DarkRed"
                     $conColor = "Yellow"
-                    write-host "`tOrder ID:`t" -nonewline
-                    write-host -foregroundcolor $color "$criteria`t`t" -nonewline
-                    write-host "Fund ID: " -nonewline
-                    write-host -foregroundcolor $color "$fund_id"
-                    write-host "`tLogo Script:`t" -nonewline
-                    write-host -foregroundcolor $color "$script"
-                    write-host "`tPlaced On:`t" -nonewline
-                    write-host -foregroundcolor $color "$placedOn"
-                    write-host "`tOccurences: " -NoNewline
-                    write-host ""
+                    # write-host "`tOrder ID:`t" -nonewline
+                    # write-host -foregroundcolor $color "$criteria`t`t" -nonewline
+                    # write-host "Fund ID: " -nonewline
+                    # write-host -foregroundcolor $color "$fund_id"
+                    # write-host "`tLogo Script:`t" -nonewline
+                    # write-host -foregroundcolor $color "$script"
+                    # write-host "`tPlaced On:`t" -nonewline
+                    # write-host -foregroundcolor $color "$placedOn"
+                    write-host "`tURL: " -NoNewline
+                    write-host "https://4766534.app.netsuite.com/app/accounting/transactions/salesord.nl?id=$ID&whence"
+                    Write-Output $ORDER
                     #$searchScript = LogoScriptWildcarder $script
                     $refind = (get-item $PackingSlip).Directory.FullName
                     #$logoSearch = Get-childitem -path "$refind" -include ("*" + $searchScript) -ErrorAction SilentlyContinue -depth 0
