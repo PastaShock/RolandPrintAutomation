@@ -400,7 +400,7 @@ if (COUNTSELECTEDORDERS() != PASTSELECTION()) {
     COUNTSELECTEDLOGOS = () => {
         let l = 0
         for (let k = 0; k < x; k++) {
-            if (orderRow[k].getElementsByClassName('toggled-on order-toggle')[0] && orderRow[k].getElementsByTagName(orderCol)[1].innerText.split('\n')[2].split(' ')[0] ) {
+            if (orderRow[k].getElementsByClassName('toggled-on order-toggle')[0] && orderRow[k].getElementsByTagName(orderCol)[1].innerText.split('\n')[2].split(' ')[0]) {
                 l += parseInt(orderRow[k].getElementsByTagName(orderCol)[1].innerText.split('\n')[2].split(' ')[0])
             };
         };

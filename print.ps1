@@ -46,23 +46,23 @@ class Logos {
     Logos(
         [string]$name,
         [int]$value
-    ){
+    ) {
         $this.name = $name
         $this.value = $value
     }
 } 
-        $logoSizesByApplication = @(
-            [Logos]::new('eleven', 0 ),
-            [Logos]::new('eight', 0 ),
-            [Logos]::new('six', 0 ),
-            [Logos]::new('five', 0 ),
-            [Logos]::new('four', 0 ),
-            [Logos]::new('digital', 0 ),
-            [Logos]::new('digiSmall', 0 ),
-            [Logos]::new('embroidery', 0 ),
-            [Logos]::new('sticker', 0 ),
-            [Logos]::new('banner', 0 )
-        )
+$logoSizesByApplication = @(
+    [Logos]::new('eleven', 0 ),
+    [Logos]::new('eight', 0 ),
+    [Logos]::new('six', 0 ),
+    [Logos]::new('five', 0 ),
+    [Logos]::new('four', 0 ),
+    [Logos]::new('digital', 0 ),
+    [Logos]::new('digiSmall', 0 ),
+    [Logos]::new('embroidery', 0 ),
+    [Logos]::new('sticker', 0 ),
+    [Logos]::new('banner', 0 )
+)
 
 function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     $printer = @("Mary-Kate", "Ashley", "Nicole", "Rolanda")
@@ -79,11 +79,12 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     # internal PDF picking slip section------------------------------------
     # if the PDF is not found, get it from the warehouse dash in chrome
     if ($null -eq $intPath) {
-        chrome "https://www.snap-raise.com/warehouse/reports/order?order_id=$orderID"
+        # chrome "https://www.snap-raise.com/warehouse/reports/order?order_id=$orderID"
+        chrome "https://4766534.app.netsuite.com/app/accounting/print/hotprint.nl?regular=T&sethotprinter=T&label=Picking+Ticket&printtype=pickingticket&trantype=salesord&print=T&id=$orderID"
         Write-Output "Internal slip was not found. Downloaded Order - $orderID.pdf from Chrome."
         Write-Output "retrying.."
         start-sleep -seconds 1
-        $intPath = (Get-ChildItem -path ($shareDrive+"AA*") -include "PICKINGTICKET$orderID.pdf" -r)
+        $intPath = (Get-ChildItem -path ($shareDrive + "AA*") -include "PICKINGTICKET$orderID.pdf" -r)
     }
     # print the internal picking slip PDF
     $intPath | foreach-object {
@@ -99,7 +100,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     $salesID = $orders.$orderID | Select-Object -ExpandProperty 'salesOrder'
     $placedOn = $orders.$orderID | Select-Object -expandproperty 'placedDate'
     # $downloadDate = $orders.$orderID | Select-Object -expandproperty 'downloadDate'
-    # $printDate = (Get-Date -Format "ddd MMM dd yyyy HH:mm:ss G\MTK") + " (Pacific Daylight Time)" + $orders.$orderID | Select-Object -expandproperty 'printDate'
+    # $printDate = (Get-Date -Format "ddd MMM dd yyyy HH:mm:ss G\MTK") + " (Pacific Daylight Time)"# $orders.$orderID | Select-Object -expandproperty 'printDate'
     $logoid = $orders.$orderID | Select-Object -expandproperty 'logoId'
     $priColor = $orders.$orderID | Select-Object -expandproperty 'priColor'
     $secColor = $orders.$orderID | Select-Object -expandproperty 'secColor'
@@ -174,7 +175,8 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     $pdfPath = Get-ChildItem -path $orderDir -include "SalesOrd_$orderID.pdf" -r | Select-Object -f 1
     if ($null -eq $pdfPath) {
-        chrome "https://www.snap-raise.com/warehouse/reports/all_order_items_packing_slip?order_id=$orderID"
+        # chrome "https://www.snap-raise.com/warehouse/reports/all_order_items_packing_slip?order_id=$orderID"
+        chrome "https://4766534.app.netsuite.com/app/accounting/print/hotprint.nl?regular=T&sethotprinter=T&label=Packing+Slip&formnumber=129&trantype=salesord&id=$orderID"
         Write-Output 'downloading All Items Packing Slip PDF...'
         Start-Sleep -seconds 1
         $pdfPath = Get-ChildItem -path $orderDir -include "order-$orderID.pdf" -r;
@@ -186,7 +188,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     }
     $dump = Get-Content orders.json
     add-content -path "$shareDrive\temp\$user`_orders.json" -value ",$dump"
-    remove-item 'orders.json'
+    # remove-item 'orders.json'
     Write-Output "`tFiles Sent to Printers Successfully"
     return
 }

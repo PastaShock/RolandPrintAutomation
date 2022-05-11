@@ -17,7 +17,7 @@
         [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
         [Alias("orderID", "i")]
         #[ValidateRange(9999,999999)]
-        #[ValidatePattern("^\d{6}$")]
+        [ValidatePattern("^\d{7,12}$")]
         [String[]] $ID,
         [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
         [Alias("OF", "o", "PackingSlip")]
