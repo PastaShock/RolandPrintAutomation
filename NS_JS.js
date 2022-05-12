@@ -35,6 +35,7 @@ var y //for storing the number of items within an order card.
 orders = {}
 orderlist = {}
 url = 'https://4766534.app.netsuite.com/app/common/search/searchresults.nl?searchid=673&dle=T'
+s3Url = "https://snapraiselogos.s3.us-west-1.amazonaws.com/Warehouse-Logos/"
 filename = 'orders.json'
 //  order row
 orderRow = document.getElementsByClassName('uir-list-row-tr')
@@ -75,6 +76,7 @@ function init() {
         "COLLD": { "column": "", "name": "LOGO DETAILS" },            //LOGO DETALS - scritpt, type, pri, sec
         "COLDD": { "column": "", "name": "DESIGN DETAILS" },          //DESIGN DETAILS - qty of 11x, 8x, 6x... per size 
         "COLDF": { "column": "", "name": "DESIGNS" },                 //DESIGNS - qty of logo sizes
+        "COLLU": { "column": "", "name": "LOGO URLS" },                //LOGO URLS - urls strings of the logo location
         "COLDL": { "column": "", "name": "ALL DESIGNS & SLIPS" },     //ALL DESIGNS AND SLIPS
         "COLSO": { "column": "", "name": "REFERENCE #" }              //SALES ORDER ID NUMBER - for matching shipments
     }
@@ -439,29 +441,45 @@ async function asyncFirstStart() {
     console.log(result);
 }
 
+// batch downloading using the given logo downloading script on the page.
 function quickDL() {
     var j = 0;
-
     // get checked orders
     var checkedOrders = [];
+    // loop through the rows on the page to check their checkbox state
     for (let i = 0; i < orderRow.length; i++) {
+        // initialize row object
         let currentIterableRow = orderRow[i].getElementsByTagName(orderCol)[0];
+        // check that the row's checkbox is checked
         if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
+            // log the orderId in the console
             console.log(orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText)
+            // add the row index to the array for reference later
             checkedOrders.push(i)
         }
     }
+    // 3 second interval to trigger (existing) download buttons on the page
     timeoutLoop = setInterval(() => {
-        if (checkedOrders.length < 1) {
-            clearTimeout(timeoutLoop);
-            console.log('timeout cleared');
+        for (let j = 0; j < checkedOrders.length; j++) {
+            // check that the array is not empty
+            // if (checkedOrders.length < 1) {
+            //     clearTimeout(timeoutLoop);
+            //     console.log('timeout cleared');
+            // }
+            // reinitialize currentIterableRow as an object
+            let currentIterableRow = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[0];
+            // check that the row is checked
+            if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
+                // check if the order is a store order
+                if (orderRow[checkedOrder[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText === 'Snap!Store Customer') {
+                    window.location = (orderRow[checkedOrder[j]].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',')[0])
+                }
+                // run a function in the a element's onClick
+                clickCell = currentIterableRow.getElementsByTagName('a')[0].onclick();
+            }
+            j++;
+            if (j === checkedOrders.length) { clearInterval(timeoutLoop) }
         }
-        let currentIterableRow = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[0];
-        if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
-            clickCell = currentIterableRow.getElementsByTagName('a')[0].onclick();
-        }
-        j++;
-        if (j === checkedOrders.length) { clearInterval(timeoutLoop) }
     }, 3000)
 }
 
