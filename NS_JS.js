@@ -43,6 +43,7 @@ orderRow = document.getElementsByClassName('uir-list-row-tr')
 orderCol = 'td'
 constCheck = 'order-toggle'
 verbBool = false;
+snapStore = 'Snap!Store Customer'
 
 //setting up for the script
 
@@ -89,27 +90,41 @@ function init() {
             //setTimeout(console.log('setTimeout(100ms)'), 100)
         }
     }
+    // On a row by row basis information is pulled
+    // x is the number of rows on the page.
     for (let j = 0; j < x; j++) {
         verbosity('getting number of logo sizes per order ...')
         const NUMBEROFLOGOSPERORDER = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n').length
         const orderId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
         verbosity(` order ${orderId} has ${NUMBEROFLOGOSPERORDER} logo sizes`)
-        for (f = 0; f < NUMBEROFLOGOSPERORDER; f++) {
+        // loop through each logo size on an order to quantity per size
+        for (let f = 0; f < NUMBEROFLOGOSPERORDER; f++) {
+            // LOGOCOUNTS is populated from the Design Details column (COLDD)
+            // COLDD:
+            //      Digital - 1 print - Download
+            //      Digital Small - 1 print - Download
             const LOGOCOUNTS = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n')[f].trim();
+            // get the name of the logo size
             let logoSizeDesignation = LOGOCOUNTS.split('-')[0].toUpperCase();
+            // check if the array at that index exists, set it to 0 if it doesn't
             if (!COUNTELEVEN[j]) {
                 COUNTELEVEN[j] = 0;
             }
+            // at the current index j, check that the logo size is large:
             if (logoSizeDesignation === '11X6' || logoSizeDesignation === 'DIGITAL') {
                 verbosity(`\t intial: ${COUNTELEVEN[j]}`)
                 verbosity(`\t\t unParsed: ${LOGOCOUNTS.split(' - ')[1].split(' ')[0].trim()}`)
                 verbosity(`\t\t Parsed: ${parseInt(LOGOCOUNTS.split(' - ')[1].split(' ')[0].trim())}`)
                 let parsed = parseInt(LOGOCOUNTS.split(' - ')[1].split(' ')[0].trim());
+                // Add the count of large size logos to the array
                 COUNTELEVEN[j] += parsed;
+                // print the array in the console
                 verbosity(`\t DIGITAL: ${COUNTELEVEN[j]}`);
             }
+            // print the current row [f] into the console
             verbosity(`\n\t\tLogos: ${orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n')[f]}`)
         }
+        // create the element that will show the number of large logos in the leftmost column
         ORDERCOUNTDIV = document.createElement('div')
         ORDERCOUNTDIV.setAttribute('class', 'LENINGRAD')
         ORDERCOUNT = document.createElement('p')
@@ -117,6 +132,17 @@ function init() {
         ORDERCOUNT.innerText = COUNTELEVEN[j]
         ORDERCOUNTDIV.appendChild(ORDERCOUNT)
         orderRow[j].getElementsByTagName(orderCol)[1].appendChild(ORDERCOUNTDIV)
+
+        // start the process to add the fund ID to the fundId column for store orders.
+       currentFundName = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText 
+        if (currentFundName === snapStore) {
+            // pull the fund Id from the Logo URLs column
+            let storeFundId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split('/')[4].split('_')[0];
+            // print the fundId in the Fund ID column
+            orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText = storeFundId;
+            // set the order type to store order:
+            orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText = snapStore.split(' ')[0];
+        }
     }
     //        if (document.getElementsByClassName('listEditSpan')[o] == "Weeding & Masking") {
     //         ORDERS_SELECTED[o] = true;
