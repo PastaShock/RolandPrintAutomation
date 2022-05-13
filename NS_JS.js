@@ -453,34 +453,35 @@ function quickDL() {
         // check that the row's checkbox is checked
         if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
             // log the orderId in the console
-            console.log(orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText)
+            verbosity(`checked order @ index: ${i} ${orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText}`)
             // add the row index to the array for reference later
             checkedOrders.push(i)
         }
     }
+    verbosity(`checkedOrder.length: ${checkedOrders.length}`);
+    verbosity(`moving into downloading loop...`)
     // 3 second interval to trigger (existing) download buttons on the page
-    timeoutLoop = setInterval(() => {
-        for (let j = 0; j < checkedOrders.length; j++) {
-            // check that the array is not empty
-            // if (checkedOrders.length < 1) {
-            //     clearTimeout(timeoutLoop);
-            //     console.log('timeout cleared');
-            // }
-            // reinitialize currentIterableRow as an object
-            let currentIterableRow = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[0];
-            // check that the row is checked
-            if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
-                // check if the order is a store order
-                if (orderRow[checkedOrder[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText === 'Snap!Store Customer') {
-                    window.location = (orderRow[checkedOrder[j]].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',')[0])
-                }
-                // run a function in the a element's onClick
-                clickCell = currentIterableRow.getElementsByTagName('a')[0].onclick();
+    // timeoutLoop = setInterval(() => {
+    for (let j = 0; j < checkedOrders.length; j++) {
+        verbosity(`checkedOrders[${j}]: ${checkedOrders[j]}`)
+        // reinitialize currentIterableRow as an object
+        let currentIterableRow = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[0];
+        // check that the row is checked
+        if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
+            // check if the order is a store order
+            verbosity(`Fund Name: ${orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText}`)
+            if (orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText === 'Snap!Store Customer') {
+                verbosity(`order is a store order, will download logos from S3`)
+                window.location = (orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',')[0])
             }
-            j++;
-            if (j === checkedOrders.length) { clearInterval(timeoutLoop) }
+            // run a function in the a element's onClick
+            verbosity(`running function via 'download'`)
+            clickCell = currentIterableRow.getElementsByTagName('a')[0].onclick();
         }
-    }, 3000)
+        // j++;
+        // if (j === checkedOrders.length) { clearInterval(timeoutLoop) }
+    }
+    // }, 3000)
 }
 
 // check if eeyore is sad,   
