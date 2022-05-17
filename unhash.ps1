@@ -11,6 +11,11 @@
 #     }
 # }
 
+# define function to take a filename and rename it/trim off excess text
+function renameRegex($filename) {
+    return $filename.name -replace "^(?:[A-z_0-9-]+)(\d{6}_[ds]+)( \(\d{1,2}\))?", '$1'
+}
+
 $c = Get-ChildItem | Where-Object {$_.Name -match "\(*\).eps"}
 for ($i = 0; $i -lt $c.count; $i++) {
     $oldName = $c[$i] -split " "
@@ -19,12 +24,14 @@ for ($i = 0; $i -lt $c.count; $i++) {
     Move-Item $c[$i].Name -Destination $destination -Force
 }
 
+# the matching regex should look for 
+# ^[order_design_\d{5}-]+(\d{5}_[ds]+)( \(\d{1,2}\))?.eps
 $b = Get-ChildItem | Where-Object {$_.Name -match "order_design_\d{4,5}-*"}
 for ($i = 0; $i -lt $b.count; $i++) {
-    $newName = ""
-    $oldName = ($b[$i] -split "-")
+    # $oldName = ($b[$i] -split "-")
     for ($j = 1; $j -lt $oldName.count; $j++) {
-        $newName += $oldName[$j];
+        $newName = renameRegex($b[$i]);
+        # $newName += $oldName[$j];
     }
     #pattern = order_design_{4-6 digits}-{fundId}_{logoSize}_{logoScript}
     if ($newName -eq "") {return}
