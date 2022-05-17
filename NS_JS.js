@@ -134,7 +134,7 @@ function init() {
         orderRow[j].getElementsByTagName(orderCol)[1].appendChild(ORDERCOUNTDIV)
 
         // start the process to add the fund ID to the fundId column for store orders.
-       currentFundName = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText 
+        currentFundName = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText
         if (currentFundName === snapStore) {
             // pull the fund Id from the Logo URLs column
             let storeFundId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split('/')[4].split('_')[0];
@@ -393,9 +393,9 @@ function createDownloadButton() {
     dlbtd.setAttribute('class', 'bntBgB')
     jsonDl = document.createElement('input');
     jsonDl.setAttribute('type', 'button')
-    jsonDl.setAttribute('value', 'create package')
+    jsonDl.setAttribute('value', 'Download Selected')
     jsonDl.setAttribute('class', 'rndbuttoninpt bntBgT');
-    jsonDl.setAttribute('onclick', 'console.save(orderlist(), "orders.json")');
+    jsonDl.setAttribute('onclick', 'console.save(orderlist(), "orders.json"); quickDL()');
     dlbtd.appendChild(jsonDl)
     dlbtr.appendChild(dlbtd)
     dlbtbody.appendChild(dlbtr)
@@ -487,7 +487,6 @@ function quickDL() {
     verbosity(`checkedOrder.length: ${checkedOrders.length}`);
     verbosity(`moving into downloading loop...`)
     // 3 second interval to trigger (existing) download buttons on the page
-    // timeoutLoop = setInterval(() => {
     for (let j = 0; j < checkedOrders.length; j++) {
         verbosity(`checkedOrders[${j}]: ${checkedOrders[j]}`)
         // reinitialize currentIterableRow as an object
@@ -502,12 +501,12 @@ function quickDL() {
             }
             // run a function in the a element's onClick
             verbosity(`running function via 'download'`)
-            clickCell = currentIterableRow.getElementsByTagName('a')[0].onclick();
+            // attempt at a timeout function again to slow down the rate of downloads
+            setTimeout(() => {
+                clickCell = currentIterableRow.getElementsByTagName('a')[0].onclick()
+            }, 1500 * j);
         }
-        // j++;
-        // if (j === checkedOrders.length) { clearInterval(timeoutLoop) }
     }
-    // }, 3000)
 }
 
 // check if eeyore is sad,   
