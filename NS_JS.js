@@ -71,8 +71,10 @@ function init() {
     COLUMNS = {
         "COLOI": { "column": "", "name": "ORDER ID" },                //ORDER ID
         "COLFI": { "column": "", "name": "FUNDRAISER ID" },           //FUNDRAISER ID
+        "COLMC": { "column": "", "name": "MAGENTO ORDER CONFIRMATION"},// store order ID
         "COLFN": { "column": "", "name": "FUNDRAISER" },              //FUNDRAISER - fund name
         "COLPD": { "column": "", "name": "ORDERED" },                 //ORDERED - placed date
+        "COLWS": { "column": "", "name": "WORKFLOW STAGE"},           //WORKFLOW - dropdown for order movement
         "COLOT": { "column": "", "name": "ORDER TYPE" },              //ORDER TYPE
         "COLLD": { "column": "", "name": "LOGO DETAILS" },            //LOGO DETALS - scritpt, type, pri, sec
         "COLDD": { "column": "", "name": "DESIGN DETAILS" },          //DESIGN DETAILS - qty of 11x, 8x, 6x... per size 
@@ -182,12 +184,14 @@ function changeState(elStateToChange) {
     if (toggleEl.getAttribute('class') == 'toggled-off order-toggle') {
         toggleEl.setAttribute('class', 'toggled-on order-toggle')
         //set workflow stage to "Weeding and Masking"
-        document.getElementById('lstinln_' + elStateToChange + '_0').innerText = 'Weeding & Masking'
+        // document.getElementById('lstinln_' + elStateToChange + '_0').innerText = 'Weeding & Masking'
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].innerText = 'Weeding & Masking';
         verbosity(`set order ${elStateToChange} to weeding and masking`)
     } else {
         toggleEl.setAttribute('class', 'toggled-off order-toggle')
         //set workflow stage to "Printing"
-        document.getElementById('lstinln_' + elStateToChange + '_0').innerText = "Printing"
+        // document.getElementById('lstinln_' + elStateToChange + '_0').innerText = "Printing"
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].innerText = 'Printing';
         verbosity(`set order ${elStateToChange} to printing`)
     }
 }
