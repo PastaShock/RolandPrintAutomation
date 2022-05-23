@@ -6,6 +6,7 @@
 //following variable declarations are order specific data
 var orderId = 0
 var fundId = 0
+var magentoId = 0
 var fundName = ""
 var placedDate = 0
 var downloadDate = 0
@@ -225,7 +226,7 @@ console.save = function (data, filename) {
 //function that called to run the script
 orderlist = function createDataset() {
     //object definitiion or template for data
-    class classOrder { constructor(orderId, salesOrder, fundId, magentoId, fundName, placedDate, downloadDate, printDate, orderType, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four, digital, digiSmall, sticker, banner) { this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four; this.digital = digital; this.digiSmall = digiSmall; this.sticker = sticker; this.banner = banner } }
+    class classOrder { constructor(orderId, salesOrder, fundId, magentoId, fundName, placedDate, downloadDate, printDate, orderType, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four, digital, digiSmall, sticker, banner) { this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.magentoId = magentoId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four; this.digital = digital; this.digiSmall = digiSmall; this.sticker = sticker; this.banner = banner } }
     verbosity('created class ClassOrder');
     //for loop to increment inbetween orders
     for (let i = 0; i < x; i++) {
