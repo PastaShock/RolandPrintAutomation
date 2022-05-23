@@ -71,10 +71,10 @@ function init() {
     COLUMNS = {
         "COLOI": { "column": "", "name": "ORDER ID" },                //ORDER ID
         "COLFI": { "column": "", "name": "FUNDRAISER ID" },           //FUNDRAISER ID
-        "COLMC": { "column": "", "name": "MAGENTO ORDER CONFIRMATION"},// store order ID
+        "COLMC": { "column": "", "name": "MAGENTO ORDER CONFIRMATION" },// store order ID
         "COLFN": { "column": "", "name": "FUNDRAISER" },              //FUNDRAISER - fund name
         "COLPD": { "column": "", "name": "ORDERED" },                 //ORDERED - placed date
-        "COLWS": { "column": "", "name": "WORKFLOW STAGE"},           //WORKFLOW - dropdown for order movement
+        "COLWS": { "column": "", "name": "WORKFLOW STAGE" },           //WORKFLOW - dropdown for order movement
         "COLOT": { "column": "", "name": "ORDER TYPE" },              //ORDER TYPE
         "COLLD": { "column": "", "name": "LOGO DETAILS" },            //LOGO DETALS - scritpt, type, pri, sec
         "COLDD": { "column": "", "name": "DESIGN DETAILS" },          //DESIGN DETAILS - qty of 11x, 8x, 6x... per size 
@@ -225,7 +225,7 @@ console.save = function (data, filename) {
 //function that called to run the script
 orderlist = function createDataset() {
     //object definitiion or template for data
-    class classOrder { constructor(orderId, salesOrder, fundId, fundName, placedDate, downloadDate, printDate, orderType, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four, digital, digiSmall, sticker, banner) { this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four; this.digital = digital; this.digiSmall = digiSmall; this.sticker = sticker; this.banner = banner } }
+    class classOrder { constructor(orderId, salesOrder, fundId, magentoId, fundName, placedDate, downloadDate, printDate, orderType, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four, digital, digiSmall, sticker, banner) { this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four; this.digital = digital; this.digiSmall = digiSmall; this.sticker = sticker; this.banner = banner } }
     verbosity('created class ClassOrder');
     //for loop to increment inbetween orders
     for (let i = 0; i < x; i++) {
@@ -292,6 +292,17 @@ orderlist = function createDataset() {
                 }
             };
             fundId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText
+            magentoId = () => {
+                try {
+                    if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLMC.column].innerText === undefined) {
+                    } else {
+                        return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLMC.column].innerText;
+                    }
+                } catch (err) {
+                    console.log(err);
+                    return '0';
+                }
+            };
             fundName = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText.split('(')[0].trim()
             placedDate = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLPD.column].innerText
             downloadDate = Date();
@@ -357,6 +368,7 @@ orderlist = function createDataset() {
                 orderId,
                 salesOrder(),
                 fundId,
+                magentoId(),
                 fundName,
                 placedDate,
                 downloadDate,
