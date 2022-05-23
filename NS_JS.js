@@ -186,13 +186,21 @@ function changeState(elStateToChange) {
         toggleEl.setAttribute('class', 'toggled-on order-toggle')
         //set workflow stage to "Weeding and Masking"
         // document.getElementById('lstinln_' + elStateToChange + '_0').innerText = 'Weeding & Masking'
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].innerText = 'Weeding & Masking';
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].click();
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[0].value = 'Weeding & Masking';
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[1].value = 4;
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[2].value = 3;
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].click();
         verbosity(`set order ${elStateToChange} to weeding and masking`)
     } else {
         toggleEl.setAttribute('class', 'toggled-off order-toggle')
         //set workflow stage to "Printing"
         // document.getElementById('lstinln_' + elStateToChange + '_0').innerText = "Printing"
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].click();
         orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].innerText = 'Printing';
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[1].value = 3;
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[2].value = 2;
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].click();
         verbosity(`set order ${elStateToChange} to printing`)
     }
 }
