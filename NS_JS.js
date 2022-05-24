@@ -108,7 +108,7 @@ function init() {
             //      Digital Small - 1 print - Download
             const LOGOCOUNTS = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n')[f].trim();
             // get the name of the logo size
-            let logoSizeDesignation = LOGOCOUNTS.split('-')[0].toUpperCase();
+            let logoSizeDesignation = LOGOCOUNTS.split('-')[0].toUpperCase().trim();
             // check if the array at that index exists, set it to 0 if it doesn't
             if (!COUNTELEVEN[j]) {
                 COUNTELEVEN[j] = 0;
@@ -197,7 +197,7 @@ function changeState(elStateToChange) {
         //set workflow stage to "Printing"
         // document.getElementById('lstinln_' + elStateToChange + '_0').innerText = "Printing"
         orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].click();
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].innerText = 'Printing';
+        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[0].value = 'Printing';
         orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[1].value = 3;
         orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[2].value = 2;
         orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].click();
