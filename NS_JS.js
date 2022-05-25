@@ -182,25 +182,48 @@ function createOnClick(ti) {
 
 function changeState(elStateToChange) {
     toggleEl = document.getElementsByClassName('order-toggle')[elStateToChange]
+    orderState = orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column];
     if (toggleEl.getAttribute('class') == 'toggled-off order-toggle') {
         toggleEl.setAttribute('class', 'toggled-on order-toggle')
         //set workflow stage to "Weeding and Masking"
-        // document.getElementById('lstinln_' + elStateToChange + '_0').innerText = 'Weeding & Masking'
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].click();
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[0].value = 'Weeding & Masking';
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[1].value = 4;
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[2].value = 3;
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].click();
+        orderState.click();
+        setTimeout(() => {
+            orderState.getElementsByTagName('input')[0].value = 'Weeding & Masking';
+        }, 100)
+        setTimeout(() => {
+            orderState.getElementsByTagName('input')[1].value = 5;
+        }, 200)
+        setTimeout(() => {
+            orderState.getElementsByTagName('input')[2].value = 3;
+        }, 300)
+        setTimeout(() => {
+            orderState.getElementsByClassName('listEditSpan')[0].setAttribute('ntv_val', 5);
+        }, 400)
+        setTimeout(() => {
+            orderState.click();
+        }, 600)
+        orderState.innerText = "Weeding & Masking";
         verbosity(`set order ${elStateToChange} to weeding and masking`)
     } else {
         toggleEl.setAttribute('class', 'toggled-off order-toggle')
         //set workflow stage to "Printing"
-        // document.getElementById('lstinln_' + elStateToChange + '_0').innerText = "Printing"
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].click();
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[0].value = 'Printing';
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[1].value = 3;
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].getElementsByTagName('input')[2].value = 2;
-        orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column].click();
+        orderState.click();
+        setTimeout(() => {
+            orderState.getElementsByTagName('input')[0].value = 'Printing';
+        }, 100)
+        setTimeout(() => {
+            orderState.getElementsByTagName('input')[1].value = 3;
+        }, 200)
+        setTimeout(() => {
+            orderState.getElementsByTagName('input')[2].value = 2;
+        }, 300)
+        setTimeout(() => {
+            orderState.getElementsByClassName('listEditSpan')[0].setAttribute('ntv_val', 3);
+        }, 400)
+        setTimeout(() => {
+            orderState.click();
+        }, 600)
+        orderState.innerText = "Printing";
         verbosity(`set order ${elStateToChange} to printing`)
     }
 }
