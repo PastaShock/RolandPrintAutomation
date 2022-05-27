@@ -49,9 +49,9 @@ for ($i = 0; $i -lt $b.count; $i++) {
     #pattern = order_design_{4-6 digits}-{fundId}_{logoSize}_{logoScript}
     if ($newName -eq "") { return }
     if ((Test-Path $newName) -and ($newName -ne $b[$i].name)) {
-        # Write-Output "`t deleting file $newName`n"
-        Write-Output "newName: $newName"
-        Write-Output "b[i]: $b[$i].name"
+        Write-Output "`t deleting file $newName`n"
+        # Write-Output "newName: $newName"
+        # Write-Output "b[i]: $b[$i].name"
         # Write-Host -NoNewLine 'Press any key to continue...';
         # $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
         Remove-Item $b[$i]
