@@ -22,7 +22,7 @@ function unUUID($filename) {
 # define function to take a filename and rename it/trim off excess text
 function renameRegex($filename) {
     # ^(order_design_\d{5}-)*(\d{6}_[dsx0-9]+)([A-z0-9]+)?(-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?([ ()0-9]+)?(.eps)
-    return $filename.name -replace "^(order_design_\d{5}-)*(\d{5,6}_[dsx0-9]+)([A-z0-9 -~]+)?(-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?([ ()0-9]+)?(.eps)", '$2$6'
+    return $filename.name -replace "^(order_design_\d{4,5}-)*(\d{5,6}_[dsx0-9]+)([A-z0-9 -~]+)?(-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?([ ()0-9]+)?(.eps)", '$2$6'
     # return $filename.name -replace "^(?:[A-z_0-9-]+)(\d{6}_[ds]+)( \(\d{1,2}\))?", '$1'
 }
 
