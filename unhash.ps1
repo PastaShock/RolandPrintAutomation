@@ -22,7 +22,7 @@ function unUUID($filename) {
 # define function to take a filename and rename it/trim off excess text
 function renameRegex($filename) {
     # ^(order_design_\d{5}-)*(\d{6}_[dsx0-9]+)([A-z0-9]+)?(-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?([ ()0-9]+)?(.eps)
-    return $filename.name -replace "^(order_design_\d{4,5}-)*(\d{5,6}_[dsx0-9]+)([A-z0-9 -~]+)?(-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?([ ()0-9]+)?(.eps)", '$2$6'
+    return $filename.name -replace "^(order_design_\d{4,5}-)*((\d{5,6}|[A-z0-9\-\&'\#~]+)_[dsx0-9]+)([A-z0-9\-\&'\#~]+)?(-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?([ ()0-9]+)?(.eps)", '$2$7'
     # return $filename.name -replace "^(?:[A-z_0-9-]+)(\d{6}_[ds]+)( \(\d{1,2}\))?", '$1'
 }
 
@@ -40,13 +40,15 @@ function renameRegex($filename) {
 # ^(order_design_\d{5}-)*(\d{6}_[dsx0-9]+)([A-z0-9]+)?(-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?([ ()0-9]+)?(.eps)
 $b = Get-ChildItem -include '*.eps' -r; # | Where-Object { $_.Name -match "order_design_\d{4,5}-*" }
 for ($i = 0; $i -lt $b.count; $i++) {
-    # $oldName = ($b[$i] -split "-")
+    # write-output ($b[$i]);
     # for ($j = 1; $j -lt $b.count; $j++) {
     $newName = renameRegex($b[$i]);
     # write-output "newName = $newName";
     # $newName += $oldName[$j];
     # }
     #pattern = order_design_{4-6 digits}-{fundId}_{logoSize}_{logoScript}
+    # Test-Path $newname;
+    # $newName -ne $b[$i].name;
     if ($newName -eq "") { return }
     if ((Test-Path $newName) -and ($newName -ne $b[$i].name)) {
         Write-Output "`t deleting file $newName`n"
@@ -57,8 +59,8 @@ for ($i = 0; $i -lt $b.count; $i++) {
         Remove-Item $b[$i]
     }
     else {
-        if ($newName -eq $b[$i].name) { return }
-        Write-Output "`t renaming file: $newName`n"
+        if ($newName -eq $b[$i]) { return }
+        Write-Output "`t renaming file: $newName"
         # Write-Host -NoNewLine 'Press any key to continue...';
         # $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
         $b[$i] | rename-item -newname { $newName }

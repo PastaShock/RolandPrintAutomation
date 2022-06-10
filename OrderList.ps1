@@ -99,7 +99,7 @@ for ($i = 4; $i -lt $list.length; $i++) {
         # [case] Roll
         if ($Printer -gt 1 -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
             # moves files to Rolanda dir
-            $DESTINATION = $ROOTDIR + "\" + $rollfile + $Printer
+            $DESTINATION = "$ROOTDIR\$rollfile$Printer"
             $DESTINATION
             move-item "$FUNDID*.eps" $DESTINATION -Force;
             move-item "*$ORDERID.pdf" $DESTINATION -Force;
