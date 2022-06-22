@@ -140,7 +140,8 @@ function init() {
         currentFundName = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText
         if (currentFundName === snapStore) {
             // pull the fund Id from the Logo URLs column
-            let storeFundId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split('/')[4].split('_')[0];
+            let storeFundId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split('/')
+            storeFundId = storeFundId[storeFundId - 1].split('.');
             // print the fundId in the Fund ID column
             orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText = storeFundId;
             // set the order type to store order:

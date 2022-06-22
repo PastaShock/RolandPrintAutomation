@@ -83,7 +83,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         chrome "https://4766534.app.netsuite.com/app/accounting/print/hotprint.nl?regular=T&sethotprinter=T&label=Picking+Ticket&printtype=pickingticket&trantype=salesord&print=T&id=$orderID"
         Write-Output "Internal slip was not found. Downloaded Order - $orderID.pdf from Chrome."
         Write-Output "retrying.."
-        start-sleep -seconds 1
+        start-sleep -seconds 2
         $intPath = (Get-ChildItem -path ($shareDrive + "AA*") -include "PICKINGTICKET$orderID.pdf" -r)
     }
     # print the internal picking slip PDF
@@ -95,15 +95,20 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     # data organization section --------------------------------------------
     appendLog $divider
-    $script = $orders.$orderID | Select-Object -expandproperty 'logoScript'
-    $fund_id = $orders.$orderID | Select-Object -expandproperty 'fundId'
+    $script = $orders.$orderID | Select-Object -ExpandProperty 'logoScript'
+    $fund_id = $orders.$orderID | Select-Object -ExpandProperty 'fundId'
     $salesID = $orders.$orderID | Select-Object -ExpandProperty 'salesOrder'
-    $placedOn = $orders.$orderID | Select-Object -expandproperty 'placedDate'
+    if ( [bool](($orders.$orderID).PSObject.properties.name -match 'magentoId') ) {
+        $magentoId = $orders.$orderID | Select-Object -ExpandProperty 'magentoId'
+    } else {
+        $magentoId = $null
+    }
+    $placedOn = $orders.$orderID | Select-Object -ExpandProperty 'placedDate'
     # $downloadDate = $orders.$orderID | Select-Object -expandproperty 'downloadDate'
     # $printDate = (Get-Date -Format "ddd MMM dd yyyy HH:mm:ss G\MTK") + " (Pacific Daylight Time)"# $orders.$orderID | Select-Object -expandproperty 'printDate'
-    $logoid = $orders.$orderID | Select-Object -expandproperty 'logoId'
-    $priColor = $orders.$orderID | Select-Object -expandproperty 'priColor'
-    $secColor = $orders.$orderID | Select-Object -expandproperty 'secColor'
+    $logoid = $orders.$orderID | Select-Object -ExpandProperty 'logoId'
+    $priColor = $orders.$orderID | Select-Object -ExpandProperty 'priColor'
+    $secColor = $orders.$orderID | Select-Object -ExpandProperty 'secColor'
     # Logging to console:
     if ($null -eq $script) { write-host -ForegroundColor Red "no logo script!"; return } else {
         Write-Output $orderID
@@ -128,7 +133,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     # Setup for printing a package label:
     $escapedScript = $script -replace "\|", ""
     
-    node 'C:\ps\label_temp\app.js' --script=$escapedScript --orderid=$orderID --salesOrder=$salesID
+    node 'C:\ps\label_temp\app.js' --script=$escapedScript --orderid=$orderID --salesOrder=$salesID --magentoId=$magentoId --fundraiserId=$fund_id
     # note: the print call will be later to make up for time it takes for the pdf to generate.
 
     # search for the logos in the HDD, in relevant directories and move them to the auto-queue for Versaworks
@@ -169,7 +174,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     # Start sleep to add delay to keep order forms in the correct positions after printing.
     # Internal/picking slip; should be first, then the external/packing
-    # start-sleep -Seconds 2
+    start-sleep -Seconds 2
 
     # find EXTERNAL PACKING SLIP PDF doc with order ID match in filename and print through acrobat
 

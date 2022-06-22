@@ -4,10 +4,10 @@
 #convert the database to a variable
 #perhaps update this to a lookup of the passed(below, in the for-each loop) order id
 #$orderPrintHistory = ($shareDrive+"temp\ORDERS_DATABASE.JSON")
-$reprints = Get-Content $DATABASE | ConvertFrom-Json
+$orders = Get-Content $DATABASE | ConvertFrom-Json
 
 Get-Content $labels | foreach-object $_ {
-    $orderinfo = $reprints.$_ | select-object -f 1
+    $orderinfo = $orders.$_ | select-object -f 1
     $script = $orderInfo.logoscript
     $orderid = $orderInfo.orderID
     $salesOrder = $orderInfo.salesOrder

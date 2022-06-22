@@ -43,30 +43,46 @@ $rollFile = 'r{0:MMdd}0' -f $date
 #$PRNTRDIR = for ($i = 0; $i -lt 4; $i++) {$rollfile + $i;}
 $dir = get-location;
 #write-output "dir: $dir"
+# get the orders.json into a usable format
+    # get the orders.json into a POSH object
 $orders = get-childitem -path $dir\\* -include 'orders.json' -r
 $orders = get-content $orders | convertfrom-json
-$toAdd = @()
-$toAdd += get-content $DATABASE | convertfrom-json
-$toAdd += $orders
-set-content -path $DATABASE -value ($toAdd | convertto-json)
+# create an empty array to fill
+# write the array to the console
+# displayed as:
+# orders: @{6494728=; 6691294=; 6691295=; 6691296=; 6691297=; 6691501=; 6691587=}
 write-output "orders: $orders"
+# I forgot what I use this for
 $list = $orders | Get-Member
+# get all the the 'names' of the objects
 $list = ($list | select-object -property 'Name')
-#write-output "list: $list"
+# write to the console the order Ids
+write-output "list: $list"
+
+# loop through all the order IDs in the $list
 for ($i = 4; $i -lt $list.length; $i++) {
     if ($orders) {
         $j = $list[$i] | Select-Object -ExpandProperty 'Name'
         #write-output "j: $j"
         $ORDERID = $orders.$j | select-object -expandproperty 'orderId'
         #write-output "order id: $ORDERID"
-        #$ORDERTYPE = $orders.$j | select-object -expandproperty 'orderType'
-        #write-output "order type: $ORDERTYPE"
+        # $ORDERTYPE = $orders.$j | select-object -expandproperty 'orderType'
+        # write-output "order type: $ORDERTYPE"
         # $SALESORDERID = $orders.$j | Select-Object -ExpandProperty 'salesOrder'
         $CURRENTORDER = $orders.$j
         $CURRENTORDER.printDate = (Get-Date -Format "ddd MMM dd yyyy HH:mm:ss G\MTK") + " (Pacific Daylight Time)"
+        # add property with value username
+        $CURRENTORDER | Add-Member -MemberType noteProperty -Name printUser -value $env:USERNAME
         $FUNDID = $orders.$j | select-object -expandproperty 'fundId'
         #write-output "fund id: $FUNDID"
         add-content -path $printlist -value $ORDERID
+        # The following cases can be made to move/sort the orders in the file system automatically like so:
+        # switch $orderType
+            # [case] OTF:
+                # write-host ...
+                # move-item $fundId.eps ../otf/
+                # move-item *$orderId.pdf ../otf/
+                # 
         # [case] normal order
         if ($Printer -lt 1 -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
             #Moving files up one directory to the folder for the current week.
