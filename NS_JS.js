@@ -141,7 +141,7 @@ function init() {
         if (currentFundName === snapStore) {
             // pull the fund Id from the Logo URLs column
             let storeFundId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split('/')
-            storeFundId = storeFundId[storeFundId - 1].split('.');
+            storeFundId = storeFundId[storeFundId.length - 1].split('.')[0].split('_')[0];
             // print the fundId in the Fund ID column
             orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText = storeFundId;
             // set the order type to store order:
@@ -187,44 +187,44 @@ function changeState(elStateToChange) {
     if (toggleEl.getAttribute('class') == 'toggled-off order-toggle') {
         toggleEl.setAttribute('class', 'toggled-on order-toggle')
         //set workflow stage to "Weeding and Masking"
-        orderState.click();
-        setTimeout(() => {
-            orderState.getElementsByTagName('input')[0].value = 'Weeding & Masking';
-        }, 100)
-        setTimeout(() => {
-            orderState.getElementsByTagName('input')[1].value = 5;
-        }, 200)
-        setTimeout(() => {
-            orderState.getElementsByTagName('input')[2].value = 3;
-        }, 300)
-        setTimeout(() => {
-            orderState.getElementsByClassName('listEditSpan')[0].setAttribute('ntv_val', 5);
-        }, 400)
-        setTimeout(() => {
-            orderState.click();
-        }, 600)
-        orderState.innerText = "Weeding & Masking";
+        // orderState.click();
+        // setTimeout(() => {
+                // orderState.getElementsByTagName('input')[0].value = 'Weeding & Masking';
+        // }, 100)
+        // setTimeout(() => {
+        //     orderState.getElementsByTagName('input')[1].value = 5;
+        // }, 200)
+        // setTimeout(() => {
+        //     orderState.getElementsByTagName('input')[2].value = 3;
+        // }, 300)
+        // setTimeout(() => {
+        //     orderState.getElementsByClassName('listEditSpan')[0].setAttribute('ntv_val', 5);
+        // }, 400)
+        // setTimeout(() => {
+        //     orderState.click();
+        // }, 600)
+        // orderState.innerText = "Weeding & Masking";
         verbosity(`set order ${elStateToChange} to weeding and masking`)
     } else {
         toggleEl.setAttribute('class', 'toggled-off order-toggle')
         //set workflow stage to "Printing"
-        orderState.click();
-        setTimeout(() => {
-            orderState.getElementsByTagName('input')[0].value = 'Printing';
-        }, 100)
-        setTimeout(() => {
-            orderState.getElementsByTagName('input')[1].value = 3;
-        }, 200)
-        setTimeout(() => {
-            orderState.getElementsByTagName('input')[2].value = 2;
-        }, 300)
-        setTimeout(() => {
-            orderState.getElementsByClassName('listEditSpan')[0].setAttribute('ntv_val', 3);
-        }, 400)
-        setTimeout(() => {
-            orderState.click();
-        }, 600)
-        orderState.innerText = "Printing";
+        // orderState.click();
+        // setTimeout(() => {
+                // orderState.getElementsByTagName('input')[0].value = 'Printing';
+        // }, 100)
+        // setTimeout(() => {
+        //     orderState.getElementsByTagName('input')[1].value = 3;
+        // }, 150)
+        // setTimeout(() => {
+        //     orderState.getElementsByTagName('input')[2].value = 2;
+        // }, 200)
+        // setTimeout(() => {
+        //     orderState.getElementsByClassName('listEditSpan')[0].setAttribute('ntv_val', 3);
+        // }, 250)
+        // setTimeout(() => {
+        //     orderState.click();
+        // }, 600)
+        // orderState.innerText = "Printing";
         verbosity(`set order ${elStateToChange} to printing`)
     }
 }
@@ -327,13 +327,12 @@ orderlist = function createDataset() {
             fundId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText
             magentoId = () => {
                 try {
-                    if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLMC.column].innerText === undefined) {
-                    } else {
+                    if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLMC.column].innerText !== "\u00a0") {
                         return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLMC.column].innerText;
                     }
                 } catch (err) {
                     console.log(err);
-                    return '0';
+                    return '';
                 }
             };
             fundName = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText.split('(')[0].trim()
@@ -464,8 +463,8 @@ var COUNTSELECTEDORDERS = () => {
 };
 var PASTSELECTION = () => {
     try {
-        let val = parseInt(document.getElementsByClassName('uir-list-name')[0].innerText.split(' ')[1].trim())
-        if (val === '-') { return 0; } else { return val; };
+        let val = parseInt(document.getElementsByClassName('uir-list-name')[0].innerText.split(' ')[3].trim())
+        return ((val === '-') ? 0 : val);
     } catch (err) {
         return 0;
     }
@@ -546,7 +545,7 @@ function quickDL() {
             verbosity(`Fund Name: ${orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText}`)
             if (orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText === 'Snap!Store Customer') {
                 verbosity(`order is a store order, will download logos from S3`)
-                window.location = (orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',')[0])
+                // window.location = (orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',')[0])
             }
             // run a function in the a element's onClick
             verbosity(`running function via 'download'`)
