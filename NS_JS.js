@@ -204,6 +204,7 @@ function changeState(elStateToChange) {
         //     orderState.click();
         // }, 600)
         // orderState.innerText = "Weeding & Masking";
+        orderState.getElementsByTagName('span')[0].innerText = "Weeding & Masking";
         verbosity(`set order ${elStateToChange} to weeding and masking`)
     } else {
         toggleEl.setAttribute('class', 'toggled-off order-toggle')
@@ -225,6 +226,7 @@ function changeState(elStateToChange) {
         //     orderState.click();
         // }, 600)
         // orderState.innerText = "Printing";
+        orderState.getElementsByTagName('span')[0].innerText = "Printing";
         verbosity(`set order ${elStateToChange} to printing`)
     }
 }
