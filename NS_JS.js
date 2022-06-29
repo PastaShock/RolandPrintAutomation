@@ -189,7 +189,7 @@ function changeState(elStateToChange) {
         //set workflow stage to "Weeding and Masking"
         // orderState.click();
         // setTimeout(() => {
-                // orderState.getElementsByTagName('input')[0].value = 'Weeding & Masking';
+        // orderState.getElementsByTagName('input')[0].value = 'Weeding & Masking';
         // }, 100)
         // setTimeout(() => {
         //     orderState.getElementsByTagName('input')[1].value = 5;
@@ -211,7 +211,7 @@ function changeState(elStateToChange) {
         //set workflow stage to "Printing"
         // orderState.click();
         // setTimeout(() => {
-                // orderState.getElementsByTagName('input')[0].value = 'Printing';
+        // orderState.getElementsByTagName('input')[0].value = 'Printing';
         // }, 100)
         // setTimeout(() => {
         //     orderState.getElementsByTagName('input')[1].value = 3;
@@ -260,7 +260,7 @@ console.save = function (data, filename) {
 //function that called to run the script
 orderlist = function createDataset() {
     //object definitiion or template for data
-    class classOrder { constructor(orderId, salesOrder, fundId, magentoId, fundName, placedDate, downloadDate, printDate, orderType, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four, digital, digiSmall, sticker, banner) { this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.magentoId = magentoId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four; this.digital = digital; this.digiSmall = digiSmall; this.sticker = sticker; this.banner = banner } }
+    class classOrder { constructor(orderId, salesOrder, fundId, magentoId, fundName, placedDate, downloadDate, printDate, orderType, orderNotes, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four, digital, digiSmall, sticker, banner) { this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.magentoId = magentoId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.orderNotes = orderNotes; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four; this.digital = digital; this.digiSmall = digiSmall; this.sticker = sticker; this.banner = banner } }
     verbosity('created class ClassOrder');
     //for loop to increment inbetween orders
     for (let i = 0; i < x; i++) {
@@ -341,6 +341,13 @@ orderlist = function createDataset() {
             placedDate = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLPD.column].innerText
             downloadDate = Date();
             orderType = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText
+            orderNotes = () => {
+                try {
+                    return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLON.column].innerText;
+                } catch {
+                    console.log('no order notes');
+                }
+            }
             logoScript = () => {
                 try {
                     if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[1] === undefined) {
@@ -408,6 +415,7 @@ orderlist = function createDataset() {
                 downloadDate,
                 printDate,
                 orderType,
+                orderNotes(),
                 logoScript(),
                 priColor(),
                 secColor(),

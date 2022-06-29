@@ -4,5 +4,10 @@ head
     style
         include stylesheet.css
 body
-p #{Script}
+if Script != 'null'
+    p #{Script}
+//- div(class='qrcode')
+    qr #{QuickCode}
+if MagId != ''
+    p #{MagId}-#{FundId}
 h1 #{OrderID}-#{SalesOrder}
