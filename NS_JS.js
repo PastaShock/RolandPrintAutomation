@@ -75,12 +75,13 @@ function init() {
         "COLMC": { "column": "", "name": "MAGENTO ORDER CONFIRMATION" },// store order ID
         "COLFN": { "column": "", "name": "FUNDRAISER" },              //FUNDRAISER - fund name
         "COLPD": { "column": "", "name": "ORDERED" },                 //ORDERED - placed date
-        "COLWS": { "column": "", "name": "WORKFLOW STAGE" },           //WORKFLOW - dropdown for order movement
+        "COLWS": { "column": "", "name": "WORKFLOW STAGE" },          //WORKFLOW - dropdown for order movement
         "COLOT": { "column": "", "name": "ORDER TYPE" },              //ORDER TYPE
+        "COLON": { "column": "", "name": "NOTES" },                   //ORDER NOTES
         "COLLD": { "column": "", "name": "LOGO DETAILS" },            //LOGO DETALS - scritpt, type, pri, sec
         "COLDD": { "column": "", "name": "DESIGN DETAILS" },          //DESIGN DETAILS - qty of 11x, 8x, 6x... per size 
         "COLDF": { "column": "", "name": "DESIGNS" },                 //DESIGNS - qty of logo sizes
-        "COLLU": { "column": "", "name": "LOGO URLS" },                //LOGO URLS - urls strings of the logo location
+        "COLLU": { "column": "", "name": "LOGO URLS" },               //LOGO URLS - urls strings of the logo location
         "COLDL": { "column": "", "name": "ALL DESIGNS & SLIPS" },     //ALL DESIGNS AND SLIPS
         "COLSO": { "column": "", "name": "REFERENCE #" }              //SALES ORDER ID NUMBER - for matching shipments
     }
@@ -142,6 +143,7 @@ function init() {
             // pull the fund Id from the Logo URLs column
             let storeFundId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split('/')
             storeFundId = storeFundId[storeFundId.length - 1].split('.')[0].split('_')[0];
+            verbosity(`storeFundId: ${storeFundId}`)
             // print the fundId in the Fund ID column
             orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText = storeFundId;
             // set the order type to store order:
@@ -203,7 +205,6 @@ function changeState(elStateToChange) {
         // setTimeout(() => {
         //     orderState.click();
         // }, 600)
-        // orderState.innerText = "Weeding & Masking";
         orderState.getElementsByTagName('span')[0].innerText = "Weeding & Masking";
         verbosity(`set order ${elStateToChange} to weeding and masking`)
     } else {
@@ -225,7 +226,6 @@ function changeState(elStateToChange) {
         // setTimeout(() => {
         //     orderState.click();
         // }, 600)
-        // orderState.innerText = "Printing";
         orderState.getElementsByTagName('span')[0].innerText = "Printing";
         verbosity(`set order ${elStateToChange} to printing`)
     }
@@ -271,43 +271,43 @@ orderlist = function createDataset() {
         imageApplicationTypes = [
             {
                 name: '11x6',
-                value: 0,
+                value: undefined,
             },
             {
                 name: '8x4',
-                value: 0,
+                value: undefined,
             },
             {
                 name: '6x3',
-                value: 0,
+                value: undefined,
             },
             {
                 name: '5x3',
-                value: 0,
+                value: undefined,
             },
             {
                 name: '4x3',
-                value: 0,
+                value: undefined,
             },
             {
                 name: 'digital',
-                value: 0,
+                value: undefined,
             },
             {
                 name: 'digital_small',
-                value: 0,
+                value: undefined,
             },
             {
                 name: 'embroidery',
-                value: 0,
+                value: undefined,
             },
             {
                 name: 'sticker',
-                value: 0,
+                value: undefined,
             },
             {
                 name: 'banner',
-                value: 0,
+                value: undefined,
             },
         ]
         verbosity('initialized imageApplicationTypes');
@@ -337,15 +337,15 @@ orderlist = function createDataset() {
                     return '';
                 }
             };
-            fundName = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText.split('(')[0].trim()
-            placedDate = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLPD.column].innerText
+            fundName = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText.split('(')[0].trim();
+            placedDate = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLPD.column].innerText;
             downloadDate = Date();
-            orderType = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText
+            orderType = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText;
             orderNotes = () => {
                 try {
                     return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLON.column].innerText;
                 } catch {
-                    console.log('no order notes');
+                    verbosity('no order notes');
                 }
             }
             logoScript = () => {
@@ -357,21 +357,21 @@ orderlist = function createDataset() {
                     }
                 } catch (err) {
                     console.log('no logo script was detected');
-                    return 'null';
+                    return undefined;
                 }
             };
             priColor = () => {
                 try {
                     return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[2].split(':')[1].split('-')[0].trim();
                 } catch (err) {
-                    return 'null';
+                    return undefined;
                 }
             };
             secColor = () => {
                 try {
                     return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[2].split(':')[2].trim();
                 } catch (err) {
-                    return 'null';
+                    return undefined;
                 }
             };
             logoId = () => {
@@ -382,12 +382,12 @@ orderlist = function createDataset() {
                         return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[0].split(' ')[1];
                     }
                 } catch (err) {
-                    return 'null';
+                    return undefined;
                 }
             };
             orderRowEl = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDF.column].innerText
             logoCountsBySize = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText
-            verbosity(`orderId: ${orderId} \n salesOrder: ${salesOrder} \n fundId: ${fundId} \n fundName: ${fundName} \n placedDate: ${placedDate} \n downloadDate: ${downloadDate} \n orderType: ${orderType} \n logoScript: ${logoScript}`)
+            verbosity(`orderId: ${orderId} \n salesOrder: ${salesOrder()} \n fundId: ${fundId} \n fundName: ${fundName} \n magentoId: ${magentoId()} \n placedDate: ${placedDate} \n downloadDate: ${downloadDate} \n orderType: ${orderType} \n logoScript: ${logoScript()}`)
             for (let j = 0; j < logoCountsBySize.split('\n').length; j++) {
                 verbosity(`for loop j:${j}/${orderRowEl}`);
                 verbosity(`orderRowEl: ${orderRowEl} \t logoCountsBySize: ${logoCountsBySize.split('\n').length}`)
@@ -398,6 +398,7 @@ orderlist = function createDataset() {
                     if (dsgnDtlEl.split(' ')[0].toUpperCase() === imageApplicationTypes[k].name.toUpperCase()) {
                         verbosity(`imageApplicationTypes[${k}] (${imageApplicationTypes[k].name}) matched to order information`)
                         verbosity(`current ${imageApplicationTypes[k].name} logo count: ${imageApplicationTypes[k].value}`)
+                        if (imageApplicationTypes[k].value == undefined) {imageApplicationTypes[k].value = 0;}
                         verbosity(`adding ${dsgnDtlEl.split(' ')[2]} to ${imageApplicationTypes[k].value}`);
                         imageApplicationTypes[k].value += Number(dsgnDtlEl.split(' ')[2])
                         verbosity(`Index: ${i}:${j}:${k} \t logo: ${imageApplicationTypes[k].name} \t qty: ${imageApplicationTypes[k].value}`)
@@ -480,9 +481,9 @@ var PASTSELECTION = () => {
     }
 };
 if (COUNTSELECTEDORDERS() != PASTSELECTION()) {
-    verbosity(`PASTSELECTION: ${PASTSELECTION()}`)
-    verbosity(`COUNTSELECTEDORDERS: ${COUNTSELECTEDORDERS()}`)
-    verbosity('COUNTSELECTEDORDERS does not equal PASTSELECTION')
+    // verbosity(`PASTSELECTION: ${PASTSELECTION()}`)
+    // verbosity(`COUNTSELECTEDORDERS: ${COUNTSELECTEDORDERS()}`)
+    // verbosity('COUNTSELECTEDORDERS does not equal PASTSELECTION')
     COUNTSELECTEDLOGOS = () => {
         let l = 0
         for (let k = 0; k < x; k++) {
@@ -495,7 +496,7 @@ if (COUNTSELECTEDORDERS() != PASTSELECTION()) {
     // PASTSELECTION() = COUNTSELECTEDORDERS();
     //console.log(COUNTSELECTEDORDERS());
     document.getElementsByClassName('uir-list-name')[0].innerText = 'orders selected: ' + COUNTSELECTEDORDERS() + ' number of 11x6: ' + COUNTSELECTEDLOGOS()
-    verbosity('updated page header')
+    // verbosity('updated page header')
 }
 
 //RunOnce section
