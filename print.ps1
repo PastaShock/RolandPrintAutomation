@@ -95,7 +95,12 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     # data organization section --------------------------------------------
     appendLog $divider
-    $script = $orders.$orderID | Select-Object -ExpandProperty 'logoScript'
+    # $script = $orders.$orderID | Select-Object -ExpandProperty 'logoScript'
+    if ( [bool](($orders.$orderID).PSObject.properties.name -match 'logoScript') ) {
+        $script = $orders.$orderID | Select-Object -ExpandProperty 'logoScript'
+    } else {
+        $script = $null
+    }
     $fund_id = $orders.$orderID | Select-Object -ExpandProperty 'fundId'
     $salesID = $orders.$orderID | Select-Object -ExpandProperty 'salesOrder'
     if ( [bool](($orders.$orderID).PSObject.properties.name -match 'magentoId') ) {
@@ -106,11 +111,26 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     $placedOn = $orders.$orderID | Select-Object -ExpandProperty 'placedDate'
     # $downloadDate = $orders.$orderID | Select-Object -expandproperty 'downloadDate'
     # $printDate = (Get-Date -Format "ddd MMM dd yyyy HH:mm:ss G\MTK") + " (Pacific Daylight Time)"# $orders.$orderID | Select-Object -expandproperty 'printDate'
-    $logoid = $orders.$orderID | Select-Object -ExpandProperty 'logoId'
-    $priColor = $orders.$orderID | Select-Object -ExpandProperty 'priColor'
-    $secColor = $orders.$orderID | Select-Object -ExpandProperty 'secColor'
+    # $logoid = $orders.$orderID | Select-Object -ExpandProperty 'logoId'
+    if ( [bool](($orders.$orderID).PSObject.properties.name -match 'logoId') ) {
+        $logoId = $orders.$orderID | Select-Object -ExpandProperty 'logoId'
+    } else {
+        $logoId = $null
+    }
+    # $priColor = $orders.$orderID | Select-Object -ExpandProperty 'priColor'
+    if ( [bool](($orders.$orderID).PSObject.properties.name -match 'priColor') ) {
+        $priColor = $orders.$orderID | Select-Object -ExpandProperty 'priColor'
+    } else {
+        $priColor = $null
+    }
+    # $secColor = $orders.$orderID | Select-Object -ExpandProperty 'secColor'
+    if ( [bool](($orders.$orderID).PSObject.properties.name -match 'secColor') ) {
+        $secColor = $orders.$orderID | Select-Object -ExpandProperty 'secColor'
+    } else {
+        $secColor = $null
+    }
     # Logging to console:
-    if ($null -eq $script) { write-host -ForegroundColor Red "no logo script!"; return } else {
+    # if ($null -eq $script) { write-host -ForegroundColor Red "no logo script!"; return } else {
         Write-Output $orders.$orderID
         # Write-Output $orderID
         # Write-Output $salesID
@@ -127,7 +147,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         appendLog "type:`t$logoId"
         appendLog "prim:`t$priColor"
         appendLog "secd:`t$secColor"
-    }
+    # }
 
     set-content orders.json ($orders | convertto-json)
     

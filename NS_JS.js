@@ -334,7 +334,7 @@ orderlist = function createDataset() {
                     }
                 } catch (err) {
                     console.log(err);
-                    return '';
+                    return undefined;
                 }
             };
             fundName = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText.split('(')[0].trim();
@@ -343,9 +343,13 @@ orderlist = function createDataset() {
             orderType = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText;
             orderNotes = () => {
                 try {
-                    return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLON.column].innerText;
-                } catch {
+                    if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLON.column].innerText !== "\u00a0") {
+                        return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLON.column].innerText;
+                    }
+                } catch (err) {
                     verbosity('no order notes');
+                    console.log(err);
+                    return undefined;
                 }
             }
             logoScript = () => {
