@@ -111,12 +111,13 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     $secColor = $orders.$orderID | Select-Object -ExpandProperty 'secColor'
     # Logging to console:
     if ($null -eq $script) { write-host -ForegroundColor Red "no logo script!"; return } else {
-        Write-Output $orderID
-        Write-Output $salesID
-        write-Output "`t$script"
-        Write-Output "`t$fund_id"
-        Write-Output "`t$placedOn"
-        # logging to the log file on the HDD
+        Write-Output $orders.$orderID
+        # Write-Output $orderID
+        # Write-Output $salesID
+        # write-Output "`t$script"
+        # Write-Output "`t$fund_id"
+        # Write-Output "`t$placedOn"
+        # # logging to the log file on the HDD
         appendLog ("  id:`t" + $orderID)
         appendLog "fund:`t$fund_id"
         appendLog "date:`t$placedOn"
@@ -140,7 +141,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     #      WARNING: DUPLICATE ORDERS WILL NOT BE FILTERED OUT!
 
-    if ($script -and $fund_id) {
+    if ($fund_id) {
         # write-output "searching for and copying order files to ../ dir and to printer/queue/ dir"
         $searchResult = Get-ChildItem -path $orderdir -include "$fund_id*.eps" -Recurse
 
