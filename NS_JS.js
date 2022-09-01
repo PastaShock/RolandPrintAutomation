@@ -560,7 +560,12 @@ function quickDL() {
             verbosity(`Fund Name: ${orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText}`)
             if (orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText === 'Snap!Store Customer') {
                 verbosity(`order is a store order, will download logos from S3`)
-                // window.location = (orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',')[0])
+                s3LinksArray = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',');
+                for (let i = 0; i < s3LinksArray.length; i++) {
+                    if (s3LinksArray[i] !== '') {
+                        window.open(s3LinksArray[i])
+                    }
+                }
             }
             // run a function in the a element's onClick
             verbosity(`running function via 'download'`)

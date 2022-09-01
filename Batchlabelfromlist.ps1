@@ -11,7 +11,9 @@ Get-Content $labels | foreach-object $_ {
     $script = $orderInfo.logoscript
     $orderid = $orderInfo.orderID
     $salesOrder = $orderInfo.salesOrder
-    node C:\ps\label_temp\app.js --script="$script" --orderid="$orderid" --salesOrder="$salesOrder"
+    $magentoId = $orderInfo.magentoId
+    $fundId = $orderInfo.fundId
+    node C:\ps\label_temp\app.js --script=$script --orderid=$orderid --salesOrder=$salesOrder --fundraiserId=$fundId --magentoId=$magentoId
 };
 
 exit
