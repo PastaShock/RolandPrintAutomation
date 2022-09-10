@@ -148,13 +148,20 @@ function init() {
             orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText = storeFundId;
             // set the order type to store order:
             orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText = snapStore.split(' ')[0];
+
+            // check if the store's logo is on the s3 server
+            checkValidS3Link(
+                orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',')[0],
+                (callback) => {
+                    if (callback) {
+                        document.getElementById('lstinln_' + j + '_1').style.color = 'green'
+                    } else {
+                        document.getElementById('lstinln_' + j + '_1').style.color = 'red'
+                    }
+                }
+            )
         }
     }
-    //        if (document.getElementsByClassName('listEditSpan')[o] == "Weeding & Masking") {
-    //         ORDERS_SELECTED[o] = true;
-    //         } else {
-    //             ORDERS_SELECTED[o] = false}
-    //     }
 }
 
 function getHREF(d) {
@@ -402,7 +409,7 @@ orderlist = function createDataset() {
                     if (dsgnDtlEl.split(' ')[0].toUpperCase() === imageApplicationTypes[k].name.toUpperCase()) {
                         verbosity(`imageApplicationTypes[${k}] (${imageApplicationTypes[k].name}) matched to order information`)
                         verbosity(`current ${imageApplicationTypes[k].name} logo count: ${imageApplicationTypes[k].value}`)
-                        if (imageApplicationTypes[k].value == undefined) {imageApplicationTypes[k].value = 0;}
+                        if (imageApplicationTypes[k].value == undefined) { imageApplicationTypes[k].value = 0; }
                         verbosity(`adding ${dsgnDtlEl.split(' ')[2]} to ${imageApplicationTypes[k].value}`);
                         imageApplicationTypes[k].value += Number(dsgnDtlEl.split(' ')[2])
                         verbosity(`Index: ${i}:${j}:${k} \t logo: ${imageApplicationTypes[k].name} \t qty: ${imageApplicationTypes[k].value}`)
@@ -575,6 +582,27 @@ function quickDL() {
             }, 1500 * j);
         }
     }
+}
+// function to send url into to check if the url returns a 200 response
+function checkValidS3Link(url, callback) {
+    const xhr = new XMLHttpRequest();
+    console.log('unsent: ', xhr.status);
+    xhr.open('get', url);
+    // console.log('opened: ', xhr.status);
+    // xhr.onprogress = () => {
+    //     console.log('loading: ', xhr.status);
+    // };
+    xhr.onload = () => {
+        console.log('done: ', xhr.status);
+        if (xhr.status === 200) {
+            console.log('true');
+            callback(true);
+        } else {
+            callback(false);
+            console.log('\tbroken S3 link');
+        }
+    };
+    xhr.send();
 }
 
 // check if eeyore is sad,   
