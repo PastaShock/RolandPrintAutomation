@@ -8,11 +8,10 @@ $rep = Get-Content reprints.csv | ConvertFrom-Csv
 #main loop
 foreach ($req in $rep) {
     rep $req.orderId;
-    $orderID = $req.orderId
-    write-host  "order:`t`t" $orderID;
     write-host  "size:`t`t" $req.logosize;
     write-host  "quantity:`t" $req.quantity;
-    write-host  "notes:`t`t" $req.notes;
+    Write-Host  "error:`t`t" $req.error;
+    write-host  "type:`t`t" $req.type;
     Pause;
 }
     function pause() {

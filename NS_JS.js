@@ -149,19 +149,18 @@ function init() {
             // set the order type to store order:
             orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText = snapStore.split(' ')[0];
 
-            // check if the store's logo is on the s3 server
-            checkValidS3Link(
-                orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',')[0],
-                (callback) => {
-                    if (callback) {
-                        document.getElementById('lstinln_' + j + '_1').style.color = 'green'
-                    } else {
-                        document.getElementById('lstinln_' + j + '_1').style.color = 'red'
-                    }
-                }
-            )
+            // check if the store's logo is on the s3 server ---------------------
+            // make an array of URLs and filter any duplicates
+            URLS = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.trim().split(',');
+            URLS.pop(-1);
+            for (let url of URLS) {console.log(url.trim())}
+            URLS = [...new Set(URLS)];
+            verbosity(`URLS: ${JSON.stringify(URLS)}`);
+            // for each URL in the field check validity
+            verbosity(`URLS length: ${URLS.length}`)
         }
     }
+    checkStoreURLs();
 }
 
 function getHREF(d) {
@@ -267,7 +266,7 @@ console.save = function (data, filename) {
 //function that called to run the script
 orderlist = function createDataset() {
     //object definitiion or template for data
-    class classOrder { constructor(orderId, salesOrder, fundId, magentoId, fundName, placedDate, downloadDate, printDate, orderType, orderNotes, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four, digital, digiSmall, sticker, banner) { this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.magentoId = magentoId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.orderNotes = orderNotes; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four; this.digital = digital; this.digiSmall = digiSmall; this.sticker = sticker; this.banner = banner } }
+    class classOrder { constructor(orderId, salesOrder, fundId, magentoId, fundName, placedDate, downloadDate, printDate, orderType, orderNotes, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four, digital, digiSmall, embroidered, sticker, banner) { this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.magentoId = magentoId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.orderNotes = orderNotes; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four; this.digital = digital; this.digiSmall = digiSmall; this.embroidered = embroidered, this.sticker = sticker; this.banner = banner } }
     verbosity('created class ClassOrder');
     //for loop to increment inbetween orders
     for (let i = 0; i < x; i++) {
@@ -305,7 +304,7 @@ orderlist = function createDataset() {
                 value: undefined,
             },
             {
-                name: 'embroidery',
+                name: 'embroidered',
                 value: undefined,
             },
             {
@@ -409,7 +408,7 @@ orderlist = function createDataset() {
                     if (dsgnDtlEl.split(' ')[0].toUpperCase() === imageApplicationTypes[k].name.toUpperCase()) {
                         verbosity(`imageApplicationTypes[${k}] (${imageApplicationTypes[k].name}) matched to order information`)
                         verbosity(`current ${imageApplicationTypes[k].name} logo count: ${imageApplicationTypes[k].value}`)
-                        if (imageApplicationTypes[k].value == undefined) { imageApplicationTypes[k].value = 0; }
+                        if (imageApplicationTypes[k].value == undefined) {imageApplicationTypes[k].value = 0;}
                         verbosity(`adding ${dsgnDtlEl.split(' ')[2]} to ${imageApplicationTypes[k].value}`);
                         imageApplicationTypes[k].value += Number(dsgnDtlEl.split(' ')[2])
                         verbosity(`Index: ${i}:${j}:${k} \t logo: ${imageApplicationTypes[k].name} \t qty: ${imageApplicationTypes[k].value}`)
@@ -440,7 +439,8 @@ orderlist = function createDataset() {
                 imageApplicationTypes[5].value,
                 imageApplicationTypes[6].value,
                 imageApplicationTypes[7].value,
-                imageApplicationTypes[8].value
+                imageApplicationTypes[8].value,
+                imageApplicationTypes[9].value
             )
             verbosity(`created class ClassOrder with data: ${JSON.stringify(orders)}`)
         }
@@ -584,18 +584,28 @@ function quickDL() {
     }
 }
 // function to send url into to check if the url returns a 200 response
+// function checkValidS3Link(url, i, j, callback) {     // pass i, j into this function to then pass into the callback
 function checkValidS3Link(url, callback) {
+    // check URL file extension:
+    fileext = url.split('.');
+    // get the filename ending from the url
+    embPng = fileext[4].split('_');
+    // pop the last el into a var, should be .eps in most cases
+    fileext = fileext.pop(-1);
+    // pop the logo designation into the embPng var, should be _d, _ds, _h, _e or _s
+    embPng = embPng.pop(-1);
+    if ((fileext === 'eps') && ((embPng === 'h') || (embPng === 'e'))) {
+        url = url.split('.');
+        url[5] = 'png';
+        url = url.join('.');
+        verbosity(`replaced url ext: ${url}`)
+    }
     const xhr = new XMLHttpRequest();
     console.log('unsent: ', xhr.status);
     xhr.open('get', url);
-    // console.log('opened: ', xhr.status);
-    // xhr.onprogress = () => {
-    //     console.log('loading: ', xhr.status);
-    // };
     xhr.onload = () => {
-        console.log('done: ', xhr.status);
         if (xhr.status === 200) {
-            console.log('true');
+            verbosity(`Status: ${xhr.status} \tURL: ${url}`);
             callback(true);
         } else {
             callback(false);
@@ -603,6 +613,52 @@ function checkValidS3Link(url, callback) {
         }
     };
     xhr.send();
+}
+
+function callbackURL(callback) {
+    if (callback) {
+        orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:✔️`
+        verbosity(`URL Valid`)
+    } else {
+        orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:❌`
+        verbosity(`URL Invalid`)
+    }
+}
+
+function checkStoreURLs() {
+    // loop through all rows in the page
+    // check if each row is a store order
+    // for each store order add an onload script that runs with the page
+    // in the function run through each URL in the URL column
+    for (let j = 0; j < x; j++) {
+        orderRow[j].onload = () => {
+        // check if the store's logo is on the s3 server ---------------------
+        // make an array of URLs and filter any duplicates
+        let URLS = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.trim().split(',');
+        URLS.pop(-1);
+        // URLS = URLS.filter((c, index) => { return URLS.indexOf(c) !== index; });
+        // OR do this:
+        URLS = [...new Set(URLS)];
+        // for each URL in the field check validity
+        for (let i = 0; i < URLS.length; i++) {
+            verbosity(`URLS length: ${URLS.length}`)
+            checkValidS3Link(
+                URLS[i],
+                (callback) => {
+                    if (callback) {
+                        orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:✔️`
+                        verbosity(`URL Valid`)
+                    } else {
+                        orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:❌`
+                        verbosity(`URL Invalid`)
+                    }
+                }
+            )   // End of the checkValidS3Link 
+            
+        }   // End of the for loop
+        }
+    orderRow[j].onload();
+    }
 }
 
 // check if eeyore is sad,   
