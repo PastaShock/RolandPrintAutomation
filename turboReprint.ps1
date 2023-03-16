@@ -54,10 +54,10 @@ function LogoFinder($criteria) {
         $PackingSlip = OrderFinder $criteria $false
                 if ($null -ne $PackingSlip) {
                     $ORDER = $ORDERS.$criteria | Select-Object -f 1
-                    $script = $ORDER.logoScript
+                    # $script = $ORDER.logoScript
                     $fund_id = $ORDER.fundid
-                    $placedOn = $Order.placedDate
-                    $color = "DarkRed"
+                    # $placedOn = $Order.placedDate
+                    # $color = "DarkRed"
                     $conColor = "Yellow"
                     # write-host "`tOrder ID:`t" -nonewline
                     # write-host -foregroundcolor $color "$criteria`t`t" -nonewline
@@ -73,7 +73,7 @@ function LogoFinder($criteria) {
                     #$searchScript = LogoScriptWildcarder $script
                     $refind = (get-item $PackingSlip).Directory.FullName
                     #$logoSearch = Get-childitem -path "$refind" -include ("*" + $searchScript) -ErrorAction SilentlyContinue -depth 0
-                    $logoSearch = Get-childitem -path "$refind" -include ("*" + $fund_id + "*") -Recurse
+                    $logoSearch = Get-childitem -path "$refind" -include "$fund_d*" -Recurse
                     #trim line endings and leading and or trailing zeroes.
                     write-host -foregroundcolor $conColor "`tOrder "$criteria" is located at: "($refind.trim("\`n"))""
                     $logoFile = $logoSearch | Select-Object -f 1
@@ -81,7 +81,7 @@ function LogoFinder($criteria) {
                         set-clipboard -value $refind
                         explorer $refind
                         } else {
-                        explorer /select,$logoFile
+                        explorer /select,$logoFile.fullname
                         }
                     } else {
                     write-host "`tsearch for $criteria returned nothing"
@@ -115,7 +115,7 @@ function LogoFinder($criteria) {
 
 function OrderFinder($ID, $open) {
     If ($null -ne $ID) {
-        $ScriptSearch = get-childitem -path $folderRange -include ("*$ID.pdf") -erroraction silentlycontinue -recurse -depth 0
+        $ScriptSearch = get-childitem -path $folderRange -filter ("*$ID.pdf") -erroraction silentlycontinue -recurse -depth 0
         #if ($ScriptSearch = "") {write-output "/n/t/t Packing slip not found."; Return;}
         $rval = ($ScriptSearch | sort-object -Property "LastWriteTime" -descending | Select-Object -f 1).FullName
         If ($open -eq $true) {
