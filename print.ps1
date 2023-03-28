@@ -1,7 +1,7 @@
 # print an order based on ID entry
 # 2020 George Pastushok
 #
-# FOR NETSUITE; VERSION 1.1
+# FOR NETSUITE; VERSION 1.2
 
 [cmdletbinding()]
 Param(
@@ -180,14 +180,15 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         # ----- Digital ------
         if ($order.digital) {
             $logoFileName = $fund_id+"_d.eps"
-            Write-Output $logoFileName
             $test = Test-Path ..\$logoFileName;
             if ($test) {
                 $numLogos = $order.digital
                 Write-Output "`tcopying $logoFileName to $dirShortName $numLogos times";
                 for ($j = 0; $j -lt $order.digital; $j++) {
-                    copy-item -Path ..\$logoFileName -Destination $queue;
-                    Start-Sleep -Milliseconds 1200
+                    $index = $j + 1
+                    $destination = "$queue\$fund_id`_d_$index.eps"
+                    copy-item -Path ..\$logoFileName -Destination $destination;
+                    Start-Sleep -Milliseconds 750
                 }
             } else {
                 masterErrorLog "$orderID, Missing Digital"
@@ -201,8 +202,10 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
                 $numLogos = $order.digiSmall
                 Write-Output "`tcopying $logoFileName to $dirShortName $numLogos times";
                 for ($j = 0; $j -lt $order.digiSmall; $j++) {
-                    copy-item -Path ..\$logoFileName -Destination $queue;
-                    Start-Sleep -Milliseconds 1200
+                    $index = $j + 1
+                    $destination = "$queue\$fund_id`_ds_$index.eps"
+                    copy-item -Path ..\$logoFileName -Destination $destination;
+                    Start-Sleep -Milliseconds 750
                 }
             } else {
                 masterErrorLog "$orderID, Missing Digital Small"
@@ -253,7 +256,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     $dump = Get-Content orders.json
     add-content -path "$shareDrive\temp\$user`_orders.json" -value ",$dump"
     # remove-item 'orders.json'
-    Write-Output "`tFiles Sent to Printers Successfully"
+    # Write-Output "`tFiles Sent to Printers Successfully"
     return
 }
 function LogoScriptWildcarder($unsearchable) {
