@@ -59,13 +59,13 @@ $logoSizesByApplication = @(
     [Logos]::new('four', 0 ),
     [Logos]::new('digital', 0 ),
     [Logos]::new('digiSmall', 0 ),
-    [Logos]::new('embroidery', 0 ),
+    [Logos]::new('embroidered', 0 ),
     [Logos]::new('sticker', 0 ),
     [Logos]::new('banner', 0 )
 )
 
 function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
-    $printer = @("Mary-Kate", "Ashley", "Nicole", "Rolanda")
+    $printer = @("Mary-Kate", "Ashley", "Nicole", "Paris", "Rolanda")
     $Q = @("A", "B", "C", "D", "E")
     $queue = "C:\ProgramData\Roland DG VersaWorks\VersaWorks\Printers\" + $printer[$p] + "\Input-" + $Q[$i]
     # prompt user for ID
@@ -163,14 +163,52 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     if ($fund_id) {
         # write-output "searching for and copying order files to ../ dir and to printer/queue/ dir"
-        $searchResult = Get-ChildItem -path $orderdir -include "$fund_id*.eps" -Recurse
+        # $searchResult = Get-ChildItem -path $orderdir -include "$fund_id*.eps" -Recurse
 
-        $searchResult | ForEach-Object {
-            $filename = $_.Name
-            $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i]
-            Write-Output "`tcopying $filename to $dirShortName";
-            Copy-Item -path $_.FullName -destination $queue
+        # $searchResult | ForEach-Object {
+        #     $filename = $_.Name
+        #     $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i]
+        #     Write-Output "`tcopying $filename to $dirShortName";
+        #     Copy-Item -path $_.FullName -destination $queue
+        # }
+
+        # ----------
+        # reconfigure above script to copy specific logo sizes to their respective queues
+        $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i]
+        $order = $orders.$orderID
+        # test the path for each logo size
+        # ----- Digital ------
+        if ($order.digital) {
+            $logoFileName = $fund_id+"_d.eps"
+            Write-Output $logoFileName
+            $test = Test-Path ..\$logoFileName;
+            if ($test) {
+                $numLogos = $order.digital
+                Write-Output "`tcopying $logoFileName to $dirShortName $numLogos times";
+                for ($j = 0; $j -lt $order.digital; $j++) {
+                    copy-item -Path ..\$logoFileName -Destination $queue;
+                    Start-Sleep -Milliseconds 1200
+                }
+            } else {
+                masterErrorLog "$orderID, Missing Digital"
+            }
         }
+        # ----- Digital Small ------
+        if ($order.digiSmall) {
+            $logoFileName = $fund_id+"_ds.eps"
+            $test = Test-Path ..\$logoFileName;
+            if ($test) {
+                $numLogos = $order.digiSmall
+                Write-Output "`tcopying $logoFileName to $dirShortName $numLogos times";
+                for ($j = 0; $j -lt $order.digiSmall; $j++) {
+                    copy-item -Path ..\$logoFileName -Destination $queue;
+                    Start-Sleep -Milliseconds 1200
+                }
+            } else {
+                masterErrorLog "$orderID, Missing Digital Small"
+            }
+        }
+        # ----------
 
         for ($i = 0; $i -lt $logoSizesByApplication.length; $i++) {
             if (Get-Member -InputObject $orders.$orderID -name $logoSizesByApplication[$i].name -MemberType Properties) {
@@ -208,9 +246,9 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         $pdfPath = Get-ChildItem -path $orderDir -include "order-$orderID.pdf" -r;
     }
     $pdfPath | foreach-object {
-        start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object {
+        start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object {;
             Start-Sleep 2;
-        } | Stop-Process
+        } | Stop-Process;
     }
     $dump = Get-Content orders.json
     add-content -path "$shareDrive\temp\$user`_orders.json" -value ",$dump"
