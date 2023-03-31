@@ -161,57 +161,97 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     #      WARNING: DUPLICATE ORDERS WILL NOT BE FILTERED OUT!
 
-    if ($fund_id) {
-        # write-output "searching for and copying order files to ../ dir and to printer/queue/ dir"
-        # $searchResult = Get-ChildItem -path $orderdir -include "$fund_id*.eps" -Recurse
-
-        # $searchResult | ForEach-Object {
-        #     $filename = $_.Name
-        #     $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i]
-        #     Write-Output "`tcopying $filename to $dirShortName";
-        #     Copy-Item -path $_.FullName -destination $queue
-        # }
-
+    if ($fund_id) {     # test for fundId
         # ----------
         # reconfigure above script to copy specific logo sizes to their respective queues
-        $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i]
-        $order = $orders.$orderID
-        # test the path for each logo size
-        # ----- Digital ------
-        if ($order.digital) {
-            $logoFileName = $fund_id+"_d.eps"
-            $test = Test-Path ..\$logoFileName;
-            if ($test) {
-                $numLogos = $order.digital
-                Write-Output "`tcopying $logoFileName to $dirShortName $numLogos times";
-                for ($j = 0; $j -lt $order.digital; $j++) {
-                    $index = $j + 1
-                    $destination = "$queue\$fund_id`_d_$index.eps"
-                    copy-item -Path ..\$logoFileName -Destination $destination;
-                    Start-Sleep -Milliseconds 750
+        $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i];     # should come out looking like: "..\Mary-Kate\Input-A"
+        $order = $orders.$orderID       # take the orderId from the order out into a variable to use in other functions
+        if ($Q[$i] -ne "C") {           #check if the selected queue is for rolls, queue C
+            # ----- Digital ------
+            if ($order.digital) {       #if order has any quantity of digital size logos
+                $logoFileName = $fund_id+"*_d.eps"      # set the logo filename to include an asterist for searching for any logo with a _logo2_ or _V2_
+                $test = Test-Path ..\$logoFileName;     # check if the logo file exists in the directory it is supposed to be in
+                if ($test) {
+                    $numLogos = $order.digital          # pull the number of logos out to reference in a quoted concatenation
+                    Write-Output "`tcopying $logoFileName to $dirShortName $numLogos times";
+                    for ($j = 0; $j -lt $order.digital; $j++) {
+                        $index = $j + 1                 # $j starts at 0, I want the logos to be appended starting a 1
+                        $destination = "$queue\$fund_id`_d_$index.eps"      # set the full destination name of the logo file with the appended index
+                        copy-item -Path ..\$logoFileName -Destination $destination;     #copy file to destination
+                        Start-Sleep -Milliseconds 750   # sleep to allow the VW queue to no be overloaded
+                    }
+                } else {        # Else when $test is false, logos do not exist where they should
+                    masterErrorLog "$orderID, Missing Digital"
                 }
-            } else {
-                masterErrorLog "$orderID, Missing Digital"
             }
-        }
-        # ----- Digital Small ------
-        if ($order.digiSmall) {
-            $logoFileName = $fund_id+"_ds.eps"
-            $test = Test-Path ..\$logoFileName;
-            if ($test) {
-                $numLogos = $order.digiSmall
-                Write-Output "`tcopying $logoFileName to $dirShortName $numLogos times";
-                for ($j = 0; $j -lt $order.digiSmall; $j++) {
-                    $index = $j + 1
-                    $destination = "$queue\$fund_id`_ds_$index.eps"
-                    copy-item -Path ..\$logoFileName -Destination $destination;
-                    Start-Sleep -Milliseconds 750
+            # ----- Digital Small ------
+            if ($order.digiSmall) {
+                $logoFileName = $fund_id+"*_ds.eps"
+                $test = Test-Path ..\$logoFileName;
+                if ($test) {
+                    $numLogos = $order.digiSmall
+                    Write-Output "`tcopying $logoFileName to $dirShortName $numLogos times";
+                    for ($j = 0; $j -lt $order.digiSmall; $j++) {
+                        $index = $j + 1
+                        $destination = "$queue\$fund_id`_ds_$index.eps"
+                        copy-item -Path ..\$logoFileName -Destination $destination;
+                        Start-Sleep -Milliseconds 750
+                    }
+                } else {
+                    masterErrorLog "$orderID, Missing Digital Small"
                 }
-            } else {
-                masterErrorLog "$orderID, Missing Digital Small"
             }
+            # ----------
+        } else {
+            $rollDirName = "r"+(Get-Date -format "MMdd")+"0"+($p + 1)
+            Write-Output "roll mode; dest: $rolldirname"
+            # ----- For rolls, do not copy logo multiple times, just once -----
+            if ($order.digital) {
+                $logoFileName = $fund_id+"*_d.eps"
+                $test = Test-Path ..\$rollDirName\$logoFileName;
+                $test
+                if ($test) {
+                    $numLogos = $order.digital
+                    for ($j = 0; $j -lt $order.digital; $j++) {
+                        $index = $j + 1
+                        $destination = "$queue\$fund_id`_d_$index.eps"
+                        copy-item -Path ..\$rollDirName\$logoFileName -Destination $destination;
+                        Start-Sleep -Milliseconds 750
+                    }
+                    Write-Output "`tcopying $logoFileName to $dirShortName";
+                    # $destination = "$queue\$fund_id`_d.eps"
+                } else {
+                    masterErrorLog "$orderID, Missing Digital"
+                }
+            }
+            # ----- Digital Small ------
+            if ($order.digiSmall) {
+                $logoFileName = $fund_id+"*_ds.eps"
+                $test = Test-Path ..\$rollDirName\$logoFileName;
+                if ($test) {
+                    $numLogos = $order.digiSmall
+                    for ($j = 0; $j -lt $order.digiSmall; $j++) {
+                        $index = $j + 1
+                        $destination = "$queue\$fund_id`_ds_$index.eps"
+                        copy-item -Path ..\$rollDirName\$logoFileName -Destination $destination;
+                        Start-Sleep -Milliseconds 750
+                    }
+                    Write-Output "`tcopying $logoFileName to $dirShortName";
+                    # $destination = "$queue\$fund_id`_ds.eps"
+                } else {
+                    masterErrorLog "$orderID, Missing Digital Small"
+                }
+            }
+            # ----- Old Method saved for reference -----
+            # $searchResult = Get-ChildItem -path $orderdir -include "$fund_id*.eps" -Recurse
+            # $searchResult | ForEach-Object {
+            #     $filename = $_.Name
+            #     $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i]
+            #     Write-Output "`tcopying $filename to $dirShortName";
+            #     Copy-Item -path $_.FullName -destination $queue
+            # }
+            # ----------
         }
-        # ----------
 
         for ($i = 0; $i -lt $logoSizesByApplication.length; $i++) {
             if (Get-Member -InputObject $orders.$orderID -name $logoSizesByApplication[$i].name -MemberType Properties) {
