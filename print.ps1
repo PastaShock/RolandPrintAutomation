@@ -21,7 +21,9 @@ Param(
     [Alias("type", "t")]
     [switch] $orderType
 )
-
+if (!(test-path $printLogs)) {
+    mkdir $printLogs
+}
 $logDate = get-date -Format "dd-MM-yy"
 $logName = "$logdate.txt"
 if ($null -eq (get-childitem -path $printLogs -include $logname -r)) {
@@ -98,14 +100,16 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     # $script = $orders.$orderID | Select-Object -ExpandProperty 'logoScript'
     if ( [bool](($orders.$orderID).PSObject.properties.name -match 'logoScript') ) {
         $script = $orders.$orderID | Select-Object -ExpandProperty 'logoScript'
-    } else {
+    }
+    else {
         $script = $null
     }
     $fund_id = $orders.$orderID | Select-Object -ExpandProperty 'fundId'
     $salesID = $orders.$orderID | Select-Object -ExpandProperty 'salesOrder'
     if ( [bool](($orders.$orderID).PSObject.properties.name -match 'magentoId') ) {
         $magentoId = $orders.$orderID | Select-Object -ExpandProperty 'magentoId'
-    } else {
+    }
+    else {
         $magentoId = $null
     }
     $placedOn = $orders.$orderID | Select-Object -ExpandProperty 'placedDate'
@@ -114,39 +118,42 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     # $logoid = $orders.$orderID | Select-Object -ExpandProperty 'logoId'
     if ( [bool](($orders.$orderID).PSObject.properties.name -match 'logoId') ) {
         $logoId = $orders.$orderID | Select-Object -ExpandProperty 'logoId'
-    } else {
+    }
+    else {
         $logoId = $null
     }
     # $priColor = $orders.$orderID | Select-Object -ExpandProperty 'priColor'
     if ( [bool](($orders.$orderID).PSObject.properties.name -match 'priColor') ) {
         $priColor = $orders.$orderID | Select-Object -ExpandProperty 'priColor'
-    } else {
+    }
+    else {
         $priColor = $null
     }
     # $secColor = $orders.$orderID | Select-Object -ExpandProperty 'secColor'
     if ( [bool](($orders.$orderID).PSObject.properties.name -match 'secColor') ) {
         $secColor = $orders.$orderID | Select-Object -ExpandProperty 'secColor'
-    } else {
+    }
+    else {
         $secColor = $null
     }
     # Logging to console:
     # if ($null -eq $script) { write-host -ForegroundColor Red "no logo script!"; return } else {
-        Write-Output $orders.$orderID
-        # Write-Output $orderID
-        # Write-Output $salesID
-        # write-Output "`t$script"
-        # Write-Output "`t$fund_id"
-        # Write-Output "`t$placedOn"
-        # # logging to the log file on the HDD
-        appendLog ("  id:`t" + $orderID)
-        appendLog "fund:`t$fund_id"
-        appendLog "date:`t$placedOn"
-        # appendLog "dnld:`t$downloadDate"
-        # appendLog "prnt:`t$printDate"
-        appendLog "text:`t$script"
-        appendLog "type:`t$logoId"
-        appendLog "prim:`t$priColor"
-        appendLog "secd:`t$secColor"
+    Write-Output $orders.$orderID
+    # Write-Output $orderID
+    # Write-Output $salesID
+    # write-Output "`t$script"
+    # Write-Output "`t$fund_id"
+    # Write-Output "`t$placedOn"
+    # # logging to the log file on the HDD
+    appendLog ("  id:`t" + $orderID)
+    appendLog "fund:`t$fund_id"
+    appendLog "date:`t$placedOn"
+    # appendLog "dnld:`t$downloadDate"
+    # appendLog "prnt:`t$printDate"
+    appendLog "text:`t$script"
+    appendLog "type:`t$logoId"
+    appendLog "prim:`t$priColor"
+    appendLog "secd:`t$secColor"
     # }
 
     set-content orders.json ($orders | convertto-json)
@@ -161,32 +168,34 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     #      WARNING: DUPLICATE ORDERS WILL NOT BE FILTERED OUT!
 
-    if ($fund_id) {     # test for fundId
+    if ($fund_id) {
+
         # ----------
         # reconfigure above script to copy specific logo sizes to their respective queues
-        $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i];     # should come out looking like: "..\Mary-Kate\Input-A"
-        $order = $orders.$orderID       # take the orderId from the order out into a variable to use in other functions
-        if ($Q[$i] -ne "C") {           #check if the selected queue is for rolls, queue C
+        $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i];
+        $order = $orders.$orderID
+        if ($Q[$i] -ne "C") {
             # ----- Digital ------
-            if ($order.digital) {       #if order has any quantity of digital size logos
-                $logoFileName = $fund_id+"*_d.eps"      # set the logo filename to include an asterist for searching for any logo with a _logo2_ or _V2_
-                $test = Test-Path ..\$logoFileName;     # check if the logo file exists in the directory it is supposed to be in
+            if ($order.digital) {
+                $logoFileName = $fund_id + "*_d.eps"
+                $test = Test-Path ..\$logoFileName;
                 if ($test) {
-                    $numLogos = $order.digital          # pull the number of logos out to reference in a quoted concatenation
+                    $numLogos = $order.digital
                     Write-Output "`tcopying $logoFileName to $dirShortName $numLogos times";
                     for ($j = 0; $j -lt $order.digital; $j++) {
-                        $index = $j + 1                 # $j starts at 0, I want the logos to be appended starting a 1
-                        $destination = "$queue\$fund_id`_d_$index.eps"      # set the full destination name of the logo file with the appended index
-                        copy-item -Path ..\$logoFileName -Destination $destination;     #copy file to destination
-                        Start-Sleep -Milliseconds 750   # sleep to allow the VW queue to no be overloaded
+                        $index = $j + 1
+                        $destination = "$queue\$fund_id`_d_$index.eps"
+                        copy-item -Path ..\$logoFileName -Destination $destination;
+                        Start-Sleep -Milliseconds 750
                     }
-                } else {        # Else when $test is false, logos do not exist where they should
+                }
+                else {
                     masterErrorLog "$orderID, Missing Digital"
                 }
             }
             # ----- Digital Small ------
             if ($order.digiSmall) {
-                $logoFileName = $fund_id+"*_ds.eps"
+                $logoFileName = $fund_id + "*_ds.eps"
                 $test = Test-Path ..\$logoFileName;
                 if ($test) {
                     $numLogos = $order.digiSmall
@@ -197,17 +206,19 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
                         copy-item -Path ..\$logoFileName -Destination $destination;
                         Start-Sleep -Milliseconds 750
                     }
-                } else {
+                }
+                else {
                     masterErrorLog "$orderID, Missing Digital Small"
                 }
             }
             # ----------
-        } else {
-            $rollDirName = "r"+(Get-Date -format "MMdd")+"0"+($p + 1)
+        }
+        else {
+            $rollDirName = "r" + (Get-Date -format "MMdd") + "0" + ($p + 1)
             Write-Output "roll mode; dest: $rolldirname"
             # ----- For rolls, do not copy logo multiple times, just once -----
             if ($order.digital) {
-                $logoFileName = $fund_id+"*_d.eps"
+                $logoFileName = $fund_id + "*_d.eps"
                 $test = Test-Path ..\$rollDirName\$logoFileName;
                 $test
                 if ($test) {
@@ -220,13 +231,14 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
                     }
                     Write-Output "`tcopying $logoFileName to $dirShortName";
                     # $destination = "$queue\$fund_id`_d.eps"
-                } else {
+                }
+                else {
                     masterErrorLog "$orderID, Missing Digital"
                 }
             }
             # ----- Digital Small ------
             if ($order.digiSmall) {
-                $logoFileName = $fund_id+"*_ds.eps"
+                $logoFileName = $fund_id + "*_ds.eps"
                 $test = Test-Path ..\$rollDirName\$logoFileName;
                 if ($test) {
                     $numLogos = $order.digiSmall
@@ -238,7 +250,8 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
                     }
                     Write-Output "`tcopying $logoFileName to $dirShortName";
                     # $destination = "$queue\$fund_id`_ds.eps"
-                } else {
+                }
+                else {
                     masterErrorLog "$orderID, Missing Digital Small"
                 }
             }
@@ -252,6 +265,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
             # }
             # ----------
         }
+        # test the path for each logo size
 
         for ($i = 0; $i -lt $logoSizesByApplication.length; $i++) {
             if (Get-Member -InputObject $orders.$orderID -name $logoSizesByApplication[$i].name -MemberType Properties) {
@@ -289,7 +303,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         $pdfPath = Get-ChildItem -path $orderDir -include "order-$orderID.pdf" -r;
     }
     $pdfPath | foreach-object {
-        start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object {;
+        start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object { ;
             Start-Sleep 2;
         } | Stop-Process;
     }
