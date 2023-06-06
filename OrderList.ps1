@@ -56,8 +56,6 @@ write-output "orders: $orders"
 $list = $orders | Get-Member
 # get all the the 'names' of the objects
 $list = ($list | select-object -property 'Name')
-# write to the console the order Ids
-write-output "list: $list"
 
 # loop through all the order IDs in the $list
 for ($i = 4; $i -lt $list.length; $i++) {
@@ -87,6 +85,8 @@ for ($i = 4; $i -lt $list.length; $i++) {
         if ($Printer -lt 1 -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
             #Moving files up one directory to the folder for the current week.
             Write-Host  -foregroundcolor yellow "no options selected: moving orders up one level."
+            # copy-item "*$FUNDID*.eps" .. -Force;
+            # copy-item "*$ORDERID*.pdf" .. -Force;
             move-item "*$FUNDID*.eps" .. -Force;
             move-item "*$ORDERID*.pdf" .. -Force;
             #remove-item *;
@@ -113,10 +113,12 @@ for ($i = 4; $i -lt $list.length; $i++) {
             move-item "*$ORDERID*.pdf" ..\Rolanda;
         }
         # [case] Roll
-        if ($Printer -gt 1 -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
+        if ($Printer -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
             # moves files to Rolanda dir
             $DESTINATION = "$ROOTDIR\$rollfile$Printer"
-            $DESTINATION
+            # $DESTINATION
+            # copy-item "$FUNDID*.eps" $DESTINATION -Force;
+            # copy-item "*$ORDERID.pdf" $DESTINATION -Force;
             move-item "$FUNDID*.eps" $DESTINATION -Force;
             move-item "*$ORDERID.pdf" $DESTINATION -Force;
             write-host -foregroundcolor yellow "option roll selected: moving orders to $DESTINATION"

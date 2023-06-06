@@ -32,10 +32,11 @@ if ($null -eq (get-childitem -path $printLogs -include $logname -r)) {
 $logFullName = "$printLogs\$logName"
 $divider = "---------------"
 # create a list of order ids from the json file
-$orders = Get-ChildItem -path $PWD -include 'orders.json' -r 
-if ($null -eq $orders) { return }
-$orders = get-content $orders | convertfrom-json
-$list = $orders | Get-Member
+$currentJobOrders = Get-ChildItem -path $PWD -include 'orders.json' -r 
+if ($null -eq $currentJobOrders) { return }
+$currentJobOrders = get-content $currentJobOrders | convertfrom-json
+$orders = (Get-Content $DATABASE | convertfrom-json)
+$list = $currentJobOrders | Get-Member
 $list = ($list | select-object -property 'Name')
 # $brother = "\\WAREHOUSE-SHIPP\Brother PT-D600"
 
@@ -97,48 +98,60 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     # data organization section --------------------------------------------
     appendLog $divider
-    # $script = $orders.$orderID | Select-Object -ExpandProperty 'logoScript'
-    if ( [bool](($orders.$orderID).PSObject.properties.name -match 'logoScript') ) {
-        $script = $orders.$orderID | Select-Object -ExpandProperty 'logoScript'
+    # $script = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'logoScript'
+    if ( [bool](($currentJobOrders.$orderID).PSObject.properties.name -match 'logoScript') ) {
+        $script = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'logoScript'
     }
     else {
         $script = $null
     }
-    $fund_id = $orders.$orderID | Select-Object -ExpandProperty 'fundId'
-    $salesID = $orders.$orderID | Select-Object -ExpandProperty 'salesOrder'
-    if ( [bool](($orders.$orderID).PSObject.properties.name -match 'magentoId') ) {
-        $magentoId = $orders.$orderID | Select-Object -ExpandProperty 'magentoId'
+    $fund_id = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'fundId'
+    $salesID = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'salesOrder'
+    if ( [bool](($currentJobOrders.$orderID).PSObject.properties.name -match 'magentoId') ) {
+        $magentoId = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'magentoId'
     }
     else {
         $magentoId = $null
     }
-    $placedOn = $orders.$orderID | Select-Object -ExpandProperty 'placedDate'
-    # $downloadDate = $orders.$orderID | Select-Object -expandproperty 'downloadDate'
-    # $printDate = (Get-Date -Format "ddd MMM dd yyyy HH:mm:ss G\MTK") + " (Pacific Daylight Time)"# $orders.$orderID | Select-Object -expandproperty 'printDate'
-    # $logoid = $orders.$orderID | Select-Object -ExpandProperty 'logoId'
-    if ( [bool](($orders.$orderID).PSObject.properties.name -match 'logoId') ) {
-        $logoId = $orders.$orderID | Select-Object -ExpandProperty 'logoId'
+    $placedOn = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'placedDate'
+    # $downloadDate = $currentJobOrders.$orderID | Select-Object -expandproperty 'downloadDate'
+    # $printDate = (Get-Date -Format "ddd MMM dd yyyy HH:mm:ss G\MTK") + " (Pacific Daylight Time)"# $currentJobOrders.$orderID | Select-Object -expandproperty 'printDate'
+    # $logoid = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'logoId'
+    if ( [bool](($currentJobOrders.$orderID).PSObject.properties.name -match 'logoId') ) {
+        $logoId = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'logoId'
     }
     else {
         $logoId = $null
     }
-    # $priColor = $orders.$orderID | Select-Object -ExpandProperty 'priColor'
-    if ( [bool](($orders.$orderID).PSObject.properties.name -match 'priColor') ) {
-        $priColor = $orders.$orderID | Select-Object -ExpandProperty 'priColor'
+    # $priColor = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'priColor'
+    if ( [bool](($currentJobOrders.$orderID).PSObject.properties.name -match 'priColor') ) {
+        $priColor = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'priColor'
     }
     else {
         $priColor = $null
     }
-    # $secColor = $orders.$orderID | Select-Object -ExpandProperty 'secColor'
-    if ( [bool](($orders.$orderID).PSObject.properties.name -match 'secColor') ) {
-        $secColor = $orders.$orderID | Select-Object -ExpandProperty 'secColor'
+    # $secColor = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'secColor'
+    if ( [bool](($currentJobOrders.$orderID).PSObject.properties.name -match 'secColor') ) {
+        $secColor = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'secColor'
     }
     else {
         $secColor = $null
     }
+
+    # Add which printer the order was printed to the orders JSON file
+        # set a variable to the value of $printer[$p]
+        Write-Output "printer: "$printer[$p]
+        $selectedPrinter = $printer[$p]
+        write-output "orderId: "$orderID
+        Write-Output 'adding property: Printer with value  $printer[$p]'
+        $currentOrder = $orders.$orderID
+        Write-Output "Order info from `$orders:`r"$currentOrder
+    $currentOrder | ForEach-Object{ if (($null -ne $_) -And ($null -eq $_.Printer)) {$_ | add-member -notepropertyname Printer -notepropertyvalue $selectedPrinter}}
+    # $currentOrder | Add-Member -NotePropertyName Printer -NotePropertyValue $selectedPrinter
+
     # Logging to console:
     # if ($null -eq $script) { write-host -ForegroundColor Red "no logo script!"; return } else {
-    Write-Output $orders.$orderID
+    # Write-Output $currentJobOrders.$orderID
     # Write-Output $orderID
     # Write-Output $salesID
     # write-Output "`t$script"
@@ -154,9 +167,10 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     appendLog "type:`t$logoId"
     appendLog "prim:`t$priColor"
     appendLog "secd:`t$secColor"
+    appendLog "prnt: `t$selectedPrinter"
     # }
-
-    set-content orders.json ($orders | convertto-json)
+    # Write-Output $currentJobOrders.$orderID
+    set-content orders.json ($currentJobOrders | convertto-json)
     
     # Setup for printing a package label:
     $escapedScript = $script -replace "\|", ""
@@ -173,7 +187,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         # ----------
         # reconfigure above script to copy specific logo sizes to their respective queues
         $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i];
-        $order = $orders.$orderID
+        $order = $currentJobOrders.$orderID
         if ($Q[$i] -ne "C") {
             # ----- Digital ------
             if ($order.digital) {
@@ -185,7 +199,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
                     for ($j = 0; $j -lt $order.digital; $j++) {
                         $index = $j + 1
                         $destination = "$queue\$fund_id`_d_$index.eps"
-                        copy-item -Path ..\$logoFileName -Destination $destination;
+                        move-item -Path ..\$logoFileName -Destination $destination;
                         Start-Sleep -Milliseconds 750
                     }
                 }
@@ -203,7 +217,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
                     for ($j = 0; $j -lt $order.digiSmall; $j++) {
                         $index = $j + 1
                         $destination = "$queue\$fund_id`_ds_$index.eps"
-                        copy-item -Path ..\$logoFileName -Destination $destination;
+                        move-item -Path ..\$logoFileName -Destination $destination;
                         Start-Sleep -Milliseconds 750
                     }
                 }
@@ -268,9 +282,9 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         # test the path for each logo size
 
         for ($i = 0; $i -lt $logoSizesByApplication.length; $i++) {
-            if (Get-Member -InputObject $orders.$orderID -name $logoSizesByApplication[$i].name -MemberType Properties) {
+            if (Get-Member -InputObject $currentJobOrders.$orderID -name $logoSizesByApplication[$i].name -MemberType Properties) {
                 $logoSizesByApplication[$i].value = 0;
-                $logoSizesByApplication[$i].value = $orders.$orderID | Select-Object -ExpandProperty $logoSizesByApplication[$i].name 
+                $logoSizesByApplication[$i].value = $currentJobOrders.$orderID | Select-Object -ExpandProperty $logoSizesByApplication[$i].name 
             }
         }
 
@@ -307,8 +321,8 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
             Start-Sleep 2;
         } | Stop-Process;
     }
-    $dump = Get-Content orders.json
-    add-content -path "$shareDrive\temp\$user`_orders.json" -value ",$dump"
+    # $dump = Get-Content orders.json
+    # add-content -path "$shareDrive\temp\$user`_orders.json" -value ",$dump"
     # remove-item 'orders.json'
     # Write-Output "`tFiles Sent to Printers Successfully"
     return
@@ -353,3 +367,6 @@ Elseif ($ID -And $desiredPrinter) {
     PrintIncentiveOrder $ID ($desiredPrinter - 1) 0
 }
 Else { return }
+
+# write the DB with updated information
+Set-Content -Path $DATABASE -Value ($orders | ConvertTo-Json)
