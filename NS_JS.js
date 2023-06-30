@@ -1,4 +1,5 @@
-//George Pastushok 2021
+//George Pastushok 2020-2023
+// design details (store) update june 2023
 
 // const { compileClientWithDependenciesTracked } = require("pug")
 
@@ -80,6 +81,7 @@ function init() {
         "COLON": { "column": "", "name": "NOTES" },                   //ORDER NOTES
         "COLLD": { "column": "", "name": "LOGO DETAILS" },            //LOGO DETALS - scritpt, type, pri, sec
         "COLDD": { "column": "", "name": "DESIGN DETAILS" },          //DESIGN DETAILS - qty of 11x, 8x, 6x... per size 
+        "COLDS": { "column": "", "name": "DESIGN DETAILS (STORE)" },  //DESIGN DETAILS For store orders
         "COLDF": { "column": "", "name": "DESIGNS" },                 //DESIGNS - qty of logo sizes
         "COLLU": { "column": "", "name": "LOGO URLS" },               //LOGO URLS - urls strings of the logo location
         "COLDL": { "column": "", "name": "ALL DESIGNS & SLIPS" },     //ALL DESIGNS AND SLIPS
@@ -100,11 +102,11 @@ function init() {
         verbosity('getting number of logo sizes per order ...')
         const NUMBEROFLOGOSPERORDER = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n').length
         const orderId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
-        verbosity(` order ${orderId} has ${NUMBEROFLOGOSPERORDER} logo sizes`)
+        verbosity(`${j}/${x}: order ${orderId} has ${NUMBEROFLOGOSPERORDER} logo sizes`)
         // loop through each logo size on an order to quantity per size
         for (let f = 0; f < NUMBEROFLOGOSPERORDER; f++) {
             // LOGOCOUNTS is populated from the Design Details column (COLDD)
-            // COLDD:
+            // COLDD & COLDS:
             //      Digital - 1 print - Download
             //      Digital Small - 1 print - Download
             const LOGOCOUNTS = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n')[f].trim();
@@ -140,12 +142,18 @@ function init() {
         // start the process to add the fund ID to the fundId column for store orders.
         currentFundName = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText
         if (currentFundName === snapStore) {
-            // pull the fund Id from the Logo URLs column
-            let storeFundId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split('/')
-            storeFundId = storeFundId[storeFundId.length - 1].split('.')[0].split('_')[0];
-            verbosity(`storeFundId: ${storeFundId}`)
-            // print the fundId in the Fund ID column
-            orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText = storeFundId;
+            // pull the fund Id from the Logo URLs column if it is not an empty cell with a NBSP
+            if (orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText !== '\xa0') {
+                verbosity(`store order: ${orderId} ----------`)
+                let storeFundId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split('/')
+                storeFundId = storeFundId[storeFundId.length - 1].split('.')[0].split('_')[0];
+                if (storeFundId !== "Download") {
+                // print the fundId in the Fund ID column
+                    verbosity(`order FundId is valid"`)
+                orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText = storeFundId;
+            }
+                verbosity(`storeFundId: ${storeFundId}`)
+            }
             // set the order type to store order:
             orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText = snapStore.split(' ')[0];
 
@@ -408,7 +416,7 @@ orderlist = function createDataset() {
                     if (dsgnDtlEl.split(' ')[0].toUpperCase() === imageApplicationTypes[k].name.toUpperCase()) {
                         verbosity(`imageApplicationTypes[${k}] (${imageApplicationTypes[k].name}) matched to order information`)
                         verbosity(`current ${imageApplicationTypes[k].name} logo count: ${imageApplicationTypes[k].value}`)
-                        if (imageApplicationTypes[k].value == undefined) {imageApplicationTypes[k].value = 0;}
+                        if (imageApplicationTypes[k].value == undefined) { imageApplicationTypes[k].value = 0; }
                         verbosity(`adding ${dsgnDtlEl.split(' ')[2]} to ${imageApplicationTypes[k].value}`);
                         imageApplicationTypes[k].value += Number(dsgnDtlEl.split(' ')[2])
                         verbosity(`Index: ${i}:${j}:${k} \t logo: ${imageApplicationTypes[k].name} \t qty: ${imageApplicationTypes[k].value}`)
@@ -526,7 +534,7 @@ function resolveFirstStart() {
             init();
             //this is what is returned once this function runs
             resolve('Initialized');
-        }, 750);
+        }, 2000);
     });
 }
 
@@ -566,10 +574,46 @@ function quickDL() {
             // check if the order is a store order
             verbosity(`Fund Name: ${orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText}`)
             if (orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText === 'Snap!Store Customer') {
-                verbosity(`order is a store order, will download logos from S3`)
-                s3LinksArray = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',');
+                verbosity(`order is a store order, will download logos from S3`);
+                // old method:
+                // s3LinksArray = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',');
+                // new method:
+                s3LinksArray = () => {
+                    logoTypes = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].innerText.split('\n');
+                    logoTypes.pop(-1);
+                    builtURLS = [];
+                    for (let i = 0; i < logoTypes.length; i++) {
+                        let logoSuffix = 'd.eps'
+                        logoTypes[i] = logoTypes[i].split(' - ')[0];
+                        switch (logoTypes[i]) {
+                            case "Digital Small":
+                                logoSuffix = "ds.eps"
+                                break;
+                            case "Digital":
+                                logoSuffix = "d.eps"
+                                break;
+                            case "Sticker":
+                                logoSuffix = "s.eps"
+                                break;
+                            case "Hats":
+                                logoSuffix = "h.png"
+                                break;
+                            case "Embroidery":
+                                logoSuffix = "e.png"
+                                break;
+                            default:
+                                break;
+                        }
+                        let builtURL = s3Url + orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText + "_" + logoSuffix;
+                        builtURLS.push(builtURL);
+                    }
+                    return builtURLS;
+                }
+                s3LinksArray = s3LinksArray();
+                verbosity(`s3LinksArray.length: ${s3LinksArray.length}`)
                 for (let i = 0; i < s3LinksArray.length; i++) {
                     if (s3LinksArray[i] !== '') {
+                        verbosity(`opening s3linksarray[${i}]: ${s3LinksArray[i]}`)
                         window.open(s3LinksArray[i])
                     }
                 }
@@ -588,6 +632,10 @@ function quickDL() {
 function checkValidS3Link(url, callback) {
     // check URL file extension:
     fileext = url.split('.');
+    // check if the URL field is a valid string for manipulation
+    if (fileext) {
+        verbosity `fileext ln:637:: ${fileext[4]}`
+    }
     // get the filename ending from the url
     embPng = fileext[4].split('_');
     // pop the last el into a var, should be .eps in most cases
@@ -609,7 +657,7 @@ function checkValidS3Link(url, callback) {
             callback(true);
         } else {
             callback(false);
-            console.log('\tbroken S3 link');
+            verbosity(`\tbroken S3 link`);
         }
     };
     xhr.send();
@@ -632,32 +680,85 @@ function checkStoreURLs() {
     // in the function run through each URL in the URL column
     for (let j = 0; j < x; j++) {
         orderRow[j].onload = () => {
-        // check if the store's logo is on the s3 server ---------------------
-        // make an array of URLs and filter any duplicates
-        let URLS = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.trim().split(',');
-        URLS.pop(-1);
-        // URLS = URLS.filter((c, index) => { return URLS.indexOf(c) !== index; });
-        // OR do this:
-        URLS = [...new Set(URLS)];
-        // for each URL in the field check validity
-        for (let i = 0; i < URLS.length; i++) {
-            verbosity(`URLS length: ${URLS.length}`)
-            checkValidS3Link(
-                URLS[i],
-                (callback) => {
-                    if (callback) {
-                        orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:✔️`
-                        verbosity(`URL Valid`)
-                    } else {
-                        orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:❌`
-                        verbosity(`URL Invalid`)
-                    }
+            // check if the store's logo is on the s3 server ---------------------
+            // make an array of URLs from the logo URLs field and filter any duplicates
+            // for getting URLs from the Design Details (Store) field:
+            let URLTypes = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].innerText.split('\n');
+            URLTypes.pop(-1); // drop the last item from the array, its always empty
+            // create empty array to fill in the following loop with logo suffixes:
+            let logoSuffixArr = {};
+            URLS = []; // 
+            for (let i = 0; i < URLTypes.length; i++) { // loop within the logos req'd for an order
+                console.log(`URLTypes.length: ${URLTypes.length}`)
+                URLTypes[i] = URLTypes[i].split(' - ')[0];
+                console.log(`URLTypes[i]: ${URLTypes[i]}`);
+                switch (URLTypes[i]) {
+                    case "Digital Small":
+                        console.log('digital small');
+                        logoSuffixArr[i] = "ds.eps"
+                        break;
+                    case "Digital":
+                        console.log('digital');
+                        logoSuffixArr[i] = "d.eps"
+                        break;
+                    case "Sticker":
+                        console.log('stickers');
+                        logoSuffixArr[i] = "s.eps"
+                        break;
+                    case "Hats":
+                        console.log('hats');
+                        logoSuffixArr[i] = "h.png"
+                        break;
+                    case "Embroidery":
+                        console.log('emb');
+                        logoSuffixArr[i] = "e.png"
+                        break;
+                    default:
+                        console.log('default');
+                        break;
                 }
-            )   // End of the checkValidS3Link 
-            
-        }   // End of the for loop
+                URLS.push(s3Url + orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText + "_" + logoSuffixArr[i]);
+                verbosity(`\t\tpushed ${URLS[i]} to URLS`)
+                // exit loop for i
+            }
+            URLS = [...new Set(URLS)];
+        verbosity(`\t\tURLS: ${URLS}\n`);
+            // for each URL in the field check validity
+            for (let i = 0; i < URLS.length; i++) {
+            verbosity(`${j}/${x} ----------\n\tURLS length: ${URLS.length}\n\tURLS:${URLS}`)
+                checkValidS3Link(
+                    URLS[i],
+                    (callback) => {
+                        if (callback) {
+                            orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:✔️`
+                            verbosity(`URL Valid`)
+                        } else {
+                            orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:❌`
+                            verbosity(`URL Invalid`)
+                        }
+                    }
+                )   // End of the checkValidS3Link 
+
+            }   // End of the for loop
         }
-    orderRow[j].onload();
+        orderRow[j].onload();
+    }
+}
+
+function storeDDlinks() {
+    // enable clickable links inn desgn details (store)
+    for (let j = 0; j < x; j++) {
+        setTimeout(() => {orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].getElementsByClassName('listEditSpan')[0].click();}, 200)
+        setTimeout(() => {orderRow[j+1].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].getElementsByClassName('listEditSpan')[0].click();}, 200)
+        // orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].getElementsByClassName('listEditSpan')[0].click();
+        // orderRow[j+1].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].getElementsByClassName('listEditSpan')[0].getElementsByTagName('a')[0].click();
+    }
+}
+
+function storeDLbyURL() {
+    console.log('getting store order URLs...');
+    for (let i = 0; i < x; i++) {
+        let s3URL = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column]
     }
 }
 

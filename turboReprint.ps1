@@ -163,12 +163,14 @@ function SearchForLogoByScript {
     $ScriptSearch = get-childitem -path $FolderRange -include ("`*" + ($string) + "`*") -erroraction silentlycontinue -recurse
     #write-output "`$ScriptSearch is $ScriptSearch"
     $rval = ($ScriptSearch | sort-object -Property "LastWriteTime" -descending | Select-Object -f 1).FullName
-    #write-output "`$rval is $rval"
+    if ($v) {
+        Write-Host -ForegroundColor Yellow "`$string: $string`n`$ScriptSearch: $ScriptSearch`n`$rval: $rval"
+    }
     If ($null -eq $rval) {
-        Write-Host "Logo was not found, try again."
+        Write-Host -foregroundcolor Red "Logo was not found, try again."
     }
     else {
-        explorer.exe /select, $rval
+        explorer /select,$rval
     }
 }
 function ShopLogoByScript($dir) {
@@ -181,10 +183,10 @@ function ShopLogoByScript($dir) {
     $rval = ($ScriptSearch | sort-object -Property "LastWriteTime" -descending | Select-Object -f 1).FullName
     #write-output "`$rval is $rval"
     If ($null -eq $rval) {
-        Write-Host "Logo was not found, try again."
+        Write-Host -foregroundcolor Red "Logo was not found, try again."
     }
     else {
-        explorer.exe /select, $rval
+        explorer /select,$rval
     }
 }
 
@@ -239,7 +241,7 @@ elseif ($share) {
         Write-Output "logo not found!"
     }
     else {
-        explorer /select, $logoFile
+        explorer /select,$logoFile
     }
 }
 else {

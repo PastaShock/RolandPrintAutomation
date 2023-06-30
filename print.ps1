@@ -19,23 +19,58 @@ Param(
     [int] $desiredQueue,
     [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
     [Alias("type", "t")]
-    [switch] $orderType
+    [switch] $orderType,
+    [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
+    [bool] $verbosity,
+    [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
+    [switch] $NoPrint,
+    [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
+    [switch] $NoCopy
 )
+if ($verbosity) {
+    Write-Host -foregroundcolor Yellow "---------- DEBUG/VERBOSE MODE ----------"
+}
+if ($noPrint) {
+    Write-Host -foregroundcolor Yellow "------------- NO PRINTING --------------"
+}
+if ($noCopy) {
+    Write-Host -foregroundcolor Yellow "--------------- NO COPY ----------------"
+}
 if (!(test-path $printLogs)) {
     mkdir $printLogs
+    if ($verbosity) {
+        Write-Host -ForegroundColor Yellow "created print logs directory"
+    }
 }
 $logDate = get-date -Format "dd-MM-yy"
 $logName = "$logdate.txt"
 if ($null -eq (get-childitem -path $printLogs -include $logname -r)) {
     new-item -name $logname -path $printLogs
+    if ($verbosity) {
+        Write-Host -ForegroundColor Yellow "created print log for today - $logdate"
+    }
 }
 $logFullName = "$printLogs\$logName"
 $divider = "---------------"
 # create a list of order ids from the json file
 $currentJobOrders = Get-ChildItem -path $PWD -include 'orders.json' -r 
-if ($null -eq $currentJobOrders) { return }
+if ($verbosity) {
+    Write-Host -ForegroundColor Yellow "Imported orders from orders.json"
+}
+if ($null -eq $currentJobOrders) {
+    if ($verbosity) {
+        Write-Host -ForegroundColor Yellow "Orders.json is empty or does not exist"
+    }
+    return;
+}
 $currentJobOrders = get-content $currentJobOrders | convertfrom-json
+if ($verbosity) {
+    Write-Host -ForegroundColor Yellow "Converted data from orders.json into a PSObject"
+}
 $orders = (Get-Content $DATABASE | convertfrom-json)
+if ($verbosity) {
+    Write-Host -ForegroundColor Yellow "Converted data from $database into a PSObject"
+}
 $list = $currentJobOrders | Get-Member
 $list = ($list | select-object -property 'Name')
 # $brother = "\\WAREHOUSE-SHIPP\Brother PT-D600"
@@ -90,14 +125,18 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         $intPath = (Get-ChildItem -path ($shareDrive + "AA*") -include "PICKINGTICKET$orderID.pdf" -r)
     }
     # print the internal picking slip PDF
-    $intPath | foreach-object {
-        start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object {
-            Start-Sleep 1;
-        } | Stop-Process
+    if (!($NoCopy)) {
+        $intPath | foreach-object {
+            start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object {
+                Start-Sleep 1;
+            } | Stop-Process
+        }
     }
 
-    # data organization section --------------------------------------------
-    appendLog $divider
+    # data assignment and logging section --------------------------------------------
+    if (!($verbosity)) {
+        appendLog $divider
+    }
     # $script = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'logoScript'
     if ( [bool](($currentJobOrders.$orderID).PSObject.properties.name -match 'logoScript') ) {
         $script = $currentJobOrders.$orderID | Select-Object -ExpandProperty 'logoScript'
@@ -140,13 +179,23 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     # Add which printer the order was printed to the orders JSON file
         # set a variable to the value of $printer[$p]
-        Write-Output "printer: "$printer[$p]
+        if ($verbosity) {
+            Write-Host -ForegroundColor Yellow "printer: "$printer[$p]
+        }
         $selectedPrinter = $printer[$p]
-        write-output "orderId: "$orderID
-        Write-Output 'adding property: Printer with value  $printer[$p]'
+        if ($verbosity) {
+            Write-Host -ForegroundColor Yellow "orderId: "$orderID
+            Write-Host -ForegroundColor Yellow "adding property: Printer with value $($printer[$p]) $($Q[$i])"
+        }
         $currentOrder = $orders.$orderID
-        Write-Output "Order info from `$orders:`r"$currentOrder
+        if ($verbosity) {
+            Write-Host -ForegroundColor Yellow "Order info from `$orders:";
+        }
+        $currentOrder | Format-List
     $currentOrder | ForEach-Object{ if (($null -ne $_) -And ($null -eq $_.Printer)) {$_ | add-member -notepropertyname Printer -notepropertyvalue $selectedPrinter}}
+    if ($verbosity) {
+        Write-Host -ForegroundColor Yellow "Added printer info to order in the DB PSObject";
+    }
     # $currentOrder | Add-Member -NotePropertyName Printer -NotePropertyValue $selectedPrinter
 
     # Logging to console:
@@ -158,24 +207,31 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     # Write-Output "`t$fund_id"
     # Write-Output "`t$placedOn"
     # # logging to the log file on the HDD
-    appendLog ("  id:`t" + $orderID)
-    appendLog "fund:`t$fund_id"
-    appendLog "date:`t$placedOn"
-    # appendLog "dnld:`t$downloadDate"
-    # appendLog "prnt:`t$printDate"
-    appendLog "text:`t$script"
-    appendLog "type:`t$logoId"
-    appendLog "prim:`t$priColor"
-    appendLog "secd:`t$secColor"
-    appendLog "prnt: `t$selectedPrinter"
+    if (!($verbosity)) {
+        appendLog ("  id:`t" + $orderID)
+        appendLog "fund:`t$fund_id"
+        appendLog "date:`t$placedOn"
+        # appendLog "dnld:`t$downloadDate"
+        # appendLog "prnt:`t$printDate"
+        appendLog "text:`t$script"
+        appendLog "type:`t$logoId"
+        appendLog "prim:`t$priColor"
+        appendLog "secd:`t$secColor"
+        appendLog "prnt: `t$selectedPrinter"
+    }
     # }
     # Write-Output $currentJobOrders.$orderID
+    if ($verbosity) {
+        Write-Host -ForegroundColor Yellow "Converting `$currentJobOrders to JSON";
+    }
     set-content orders.json ($currentJobOrders | convertto-json)
     
     # Setup for printing a package label:
     $escapedScript = $script -replace "\|", ""
     
-    node 'C:\ps\label_temp\app.js' --script=$escapedScript --orderid=$orderID --salesOrder=$salesID --magentoId=$magentoId --fundraiserId=$fund_id
+    if (!($NoPrint)) {
+        node 'C:\ps\label_temp\app.js' --script=$escapedScript --orderid=$orderID --salesOrder=$salesID --magentoId=$magentoId --fundraiserId=$fund_id
+    }
     # note: the print call will be later to make up for time it takes for the pdf to generate.
 
     # search for the logos in the HDD, in relevant directories and move them to the auto-queue for Versaworks
@@ -183,7 +239,6 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     #      WARNING: DUPLICATE ORDERS WILL NOT BE FILTERED OUT!
 
     if ($fund_id) {
-
         # ----------
         # reconfigure above script to copy specific logo sizes to their respective queues
         $dirShortName = "...\" + $printer[$p] + "\Input-" + $Q[$i];
@@ -199,12 +254,17 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
                     for ($j = 0; $j -lt $order.digital; $j++) {
                         $index = $j + 1
                         $destination = "$queue\$fund_id`_d_$index.eps"
-                        move-item -Path ..\$logoFileName -Destination $destination;
-                        Start-Sleep -Milliseconds 750
+                        if (!($NoCopy)) {
+                            copy-item -Path ..\$logoFileName -Destination $destination;
+                            if ($verbosity) { Write-Host -ForegroundColor Yellow "`tcopy #$($j)"}
+                            Start-Sleep -Milliseconds 750
+                        }
                     }
                 }
                 else {
-                    masterErrorLog "$orderID, Missing Digital"
+                    if (!($verbosity)) {
+                        masterErrorLog "$orderID, Missing Digital"
+                    }
                 }
             }
             # ----- Digital Small ------
@@ -217,12 +277,17 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
                     for ($j = 0; $j -lt $order.digiSmall; $j++) {
                         $index = $j + 1
                         $destination = "$queue\$fund_id`_ds_$index.eps"
-                        move-item -Path ..\$logoFileName -Destination $destination;
-                        Start-Sleep -Milliseconds 750
+                        if (!($NoCopy)) {
+                            copy-item -Path ..\$logoFileName -Destination $destination;
+                            if ($verbosity) { Write-Host -ForegroundColor Yellow "`tcopy #$($j)"}
+                            Start-Sleep -Milliseconds 750
+                        }
                     }
                 }
                 else {
-                    masterErrorLog "$orderID, Missing Digital Small"
+                    if (!($verbosity)) {
+                        masterErrorLog "$orderID, Missing Digital Small"
+                    }
                 }
             }
             # ----------
@@ -230,7 +295,6 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         else {
             $rollDirName = "r" + (Get-Date -format "MMdd") + "0" + ($p + 1)
             Write-Output "roll mode; dest: $rolldirname"
-            # ----- For rolls, do not copy logo multiple times, just once -----
             if ($order.digital) {
                 $logoFileName = $fund_id + "*_d.eps"
                 $test = Test-Path ..\$rollDirName\$logoFileName;
@@ -240,14 +304,18 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
                     for ($j = 0; $j -lt $order.digital; $j++) {
                         $index = $j + 1
                         $destination = "$queue\$fund_id`_d_$index.eps"
-                        copy-item -Path ..\$rollDirName\$logoFileName -Destination $destination;
-                        Start-Sleep -Milliseconds 750
+                        if (!($NoCopy)) {
+                            copy-item -Path ..\$rollDirName\$logoFileName -Destination $destination;
+                            Start-Sleep -Milliseconds 750
+                        }
                     }
                     Write-Output "`tcopying $logoFileName to $dirShortName";
                     # $destination = "$queue\$fund_id`_d.eps"
                 }
                 else {
-                    masterErrorLog "$orderID, Missing Digital"
+                    if (!($verbosity)) {
+                        masterErrorLog "$orderID, Missing Digital"
+                    }
                 }
             }
             # ----- Digital Small ------
@@ -259,14 +327,18 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
                     for ($j = 0; $j -lt $order.digiSmall; $j++) {
                         $index = $j + 1
                         $destination = "$queue\$fund_id`_ds_$index.eps"
-                        copy-item -Path ..\$rollDirName\$logoFileName -Destination $destination;
-                        Start-Sleep -Milliseconds 750
+                        if (!($NoCopy)) {
+                            copy-item -Path ..\$rollDirName\$logoFileName -Destination $destination;
+                            Start-Sleep -Milliseconds 750
+                        }
                     }
                     Write-Output "`tcopying $logoFileName to $dirShortName";
                     # $destination = "$queue\$fund_id`_ds.eps"
                 }
                 else {
-                    masterErrorLog "$orderID, Missing Digital Small"
+                    if (!($verbosity)) {
+                        masterErrorLog "$orderID, Missing Digital Small"
+                    }
                 }
             }
             # ----- Old Method saved for reference -----
@@ -279,8 +351,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
             # }
             # ----------
         }
-        # test the path for each logo size
-
+        # this is all now redundant since I started printing the whole order object in the console; but I need the appendLog call here. 
         for ($i = 0; $i -lt $logoSizesByApplication.length; $i++) {
             if (Get-Member -InputObject $currentJobOrders.$orderID -name $logoSizesByApplication[$i].name -MemberType Properties) {
                 $logoSizesByApplication[$i].value = 0;
@@ -296,7 +367,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
                 $space = ""
             };
             if ($logoSizesByApplication[$i].value -gt 0) {
-                write-host -nonewline "`t"$space $logoSizesByApplication[$i].name":`t"$logoSizesByApplication[$i].value"`n"
+                # write-host -nonewline "`t"$space $logoSizesByApplication[$i].name":`t"$logoSizesByApplication[$i].value"`n"
                 appendLog ($space + $logoSizesByApplication[$i].name + ":`t" + $logoSizesByApplication[$i].value)
             }
         }
@@ -304,7 +375,9 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     # Start sleep to add delay to keep order forms in the correct positions after printing.
     # Internal/picking slip; should be first, then the external/packing
-    start-sleep -Seconds 2
+    if (!($verbosity)) {
+        start-sleep -Seconds 2
+    }
 
     # find EXTERNAL PACKING SLIP PDF doc with order ID match in filename and print through acrobat
 
@@ -316,10 +389,12 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         Start-Sleep -seconds 1
         $pdfPath = Get-ChildItem -path $orderDir -include "order-$orderID.pdf" -r;
     }
-    $pdfPath | foreach-object {
-        start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object { ;
-            Start-Sleep 2;
-        } | Stop-Process;
+    if (!($NoPrint)) {
+        $pdfPath | foreach-object {
+            start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object { ;
+                Start-Sleep 2;
+            } | Stop-Process;
+        }
     }
     # $dump = Get-Content orders.json
     # add-content -path "$shareDrive\temp\$user`_orders.json" -value ",$dump"
@@ -369,4 +444,6 @@ Elseif ($ID -And $desiredPrinter) {
 Else { return }
 
 # write the DB with updated information
-Set-Content -Path $DATABASE -Value ($orders | ConvertTo-Json)
+if (!($verbosity)) {
+    Set-Content -Path $DATABASE -Value ($orders | ConvertTo-Json)
+}
