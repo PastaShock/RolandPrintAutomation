@@ -1,7 +1,4 @@
-//George Pastushok 2020-2023
-// design details (store) update june 2023
-
-// const { compileClientWithDependenciesTracked } = require("pug")
+//George Pastushok 2021
 
 //create a js file thatis created when the user selects orders and click s the create package button. The button runs a function that checks for currently selected orders, gets their information, puts it into an object and creates a downloadable file with it.
 //following variable declarations are order specific data
@@ -44,7 +41,7 @@ orderRow = document.getElementsByClassName('uir-list-row-tr')
 //  order column
 orderCol = 'td'
 constCheck = 'order-toggle'
-verbBool = false;
+verbBool = true;
 snapStore = 'Snap!Store Customer'
 
 //setting up for the script
@@ -80,8 +77,8 @@ function init() {
         "COLOT": { "column": "", "name": "ORDER TYPE" },              //ORDER TYPE
         "COLON": { "column": "", "name": "NOTES" },                   //ORDER NOTES
         "COLLD": { "column": "", "name": "LOGO DETAILS" },            //LOGO DETALS - scritpt, type, pri, sec
-        "COLDD": { "column": "", "name": "DESIGN DETAILS" },          //DESIGN DETAILS - qty of 11x, 8x, 6x... per size 
-        "COLDS": { "column": "", "name": "DESIGN DETAILS (STORE)" },  //DESIGN DETAILS For store orders
+        "COLDD": { "column": "", "name": "DESIGN DETAILS" },          //DESIGN DETAILS
+        "COLDS": { "column": "", "name": "DESIGN DETAILS (STORE)" },
         "COLDF": { "column": "", "name": "DESIGNS" },                 //DESIGNS - qty of logo sizes
         "COLLU": { "column": "", "name": "LOGO URLS" },               //LOGO URLS - urls strings of the logo location
         "COLDL": { "column": "", "name": "ALL DESIGNS & SLIPS" },     //ALL DESIGNS AND SLIPS
@@ -141,17 +138,18 @@ function init() {
 
         // start the process to add the fund ID to the fundId column for store orders.
         currentFundName = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText
+        
         if (currentFundName === snapStore) {
-            // pull the fund Id from the Logo URLs column if it is not an empty cell with a NBSP
+            // pull the fund Id from the Logo URLs column if it is not an empty cell with an NBSP
             if (orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText !== '\xa0') {
                 verbosity(`store order: ${orderId} ----------`)
                 let storeFundId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split('/')
                 storeFundId = storeFundId[storeFundId.length - 1].split('.')[0].split('_')[0];
                 if (storeFundId !== "Download") {
-                // print the fundId in the Fund ID column
+                    // print the fundId in the Fund ID column
                     verbosity(`order FundId is valid"`)
-                orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText = storeFundId;
-            }
+                    orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText = storeFundId;
+                }
                 verbosity(`storeFundId: ${storeFundId}`)
             }
             // set the order type to store order:
@@ -172,7 +170,12 @@ function init() {
 }
 
 function getHREF(d) {
-    gotHREF = orderRow[d].getElementsByTagName(orderCol)[COLUMNS.COLDL.column].getElementsByTagName('a')[0].getAttribute('onclick')
+    orderDLrow = orderRow[d].getElementsByTagName(orderCol);
+    if ( orderDLrow[30] !== undefined ) {
+        gotHREF = orderDLrow[COLUMNS.COLDL.column].getElementsByTagName('a')[0].getAttribute('onclick')
+    } else {
+        gotHREF = orderDLrow[COLUMNS.COLDL.column-2].getElementsByTagName('a')[0].getAttribute('onclick')
+    }
     return gotHREF
 }
 
@@ -374,7 +377,7 @@ orderlist = function createDataset() {
                         return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[1];
                     }
                 } catch (err) {
-                    console.log('no logo script was detected');
+                    verbosity(`\trow ${i} order ${orderId} no logo script was detected`);
                     return undefined;
                 }
             };
@@ -416,7 +419,7 @@ orderlist = function createDataset() {
                     if (dsgnDtlEl.split(' ')[0].toUpperCase() === imageApplicationTypes[k].name.toUpperCase()) {
                         verbosity(`imageApplicationTypes[${k}] (${imageApplicationTypes[k].name}) matched to order information`)
                         verbosity(`current ${imageApplicationTypes[k].name} logo count: ${imageApplicationTypes[k].value}`)
-                        if (imageApplicationTypes[k].value == undefined) { imageApplicationTypes[k].value = 0; }
+                        if (imageApplicationTypes[k].value == undefined) {imageApplicationTypes[k].value = 0;}
                         verbosity(`adding ${dsgnDtlEl.split(' ')[2]} to ${imageApplicationTypes[k].value}`);
                         imageApplicationTypes[k].value += Number(dsgnDtlEl.split(' ')[2])
                         verbosity(`Index: ${i}:${j}:${k} \t logo: ${imageApplicationTypes[k].name} \t qty: ${imageApplicationTypes[k].value}`)
@@ -573,40 +576,50 @@ function quickDL() {
         if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
             // check if the order is a store order
             verbosity(`Fund Name: ${orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText}`)
-            if (orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText === 'Snap!Store Customer') {
+            if (orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText === snapStore) {
                 verbosity(`order is a store order, will download logos from S3`);
                 // old method:
                 // s3LinksArray = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLLU.column].innerText.split(',');
                 // new method:
                 s3LinksArray = () => {
+                    // Create array of URLs based on the logo sizes in the design details (store) field
+                    // get logo sizes into an array:
                     logoTypes = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].innerText.split('\n');
+                    // last item is always blank, drop it.
                     logoTypes.pop(-1);
+                    // create blank array to store URLs built from logo types in the previous array.
                     builtURLS = [];
+                    // for every logo type in the array, build a URL with the corresponding suffix
                     for (let i = 0; i < logoTypes.length; i++) {
-                        let logoSuffix = 'd.eps'
-                        logoTypes[i] = logoTypes[i].split(' - ')[0];
-                        switch (logoTypes[i]) {
-                            case "Digital Small":
-                                logoSuffix = "ds.eps"
-                                break;
-                            case "Digital":
-                                logoSuffix = "d.eps"
-                                break;
-                            case "Sticker":
-                                logoSuffix = "s.eps"
-                                break;
-                            case "Hats":
-                                logoSuffix = "h.png"
-                                break;
-                            case "Embroidery":
-                                logoSuffix = "e.png"
-                                break;
-                            default:
-                                break;
-                        }
-                        let builtURL = s3Url + orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText + "_" + logoSuffix;
-                        builtURLS.push(builtURL);
+                        // let logoSuffix = 'o.eps'
+                        // logoTypes[i] = logoTypes[i].split(' - ')[0];
+                        // switch (logoTypes[i]) {
+                        //     case "Digital Small":
+                        //         logoSuffix = "ds.eps"
+                        //         break;
+                        //     case "Digital":
+                        //         logoSuffix = "d.eps"
+                        //         break;
+                        //     case "Sticker":
+                        //         logoSuffix = "s.eps"
+                        //         break;
+                        //     case "Hats":
+                        //         logoSuffix = "h.png"
+                        //         break;
+                        //     case "Embroidery":
+                        //         logoSuffix = "e.png"
+                        //         break;
+                        //     default:
+                        //         break;
+                        // }
+                        // let builtURL = s3Url + orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText + "_" + logoSuffix;
+                        // builtURLS.push(builtURL);
                     }
+                    // method 2: Just grab the fundId from the fundId column and download all available from s3 bucket
+                    let fundId = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText
+                    builtURLS.push(`${s3Url}${fundId}_d.eps`);
+                    builtURLS.push(`${s3Url}${fundId}_ds.eps`);
+                    builtURLS.push(`${s3Url}${fundId}_s.eps`);
                     return builtURLS;
                 }
                 s3LinksArray = s3LinksArray();
@@ -634,7 +647,7 @@ function checkValidS3Link(url, callback) {
     fileext = url.split('.');
     // check if the URL field is a valid string for manipulation
     if (fileext) {
-        verbosity `fileext ln:637:: ${fileext[4]}`
+        verbosity `fileext ln:590:: ${fileext[4]}`
     }
     // get the filename ending from the url
     embPng = fileext[4].split('_');
@@ -680,68 +693,66 @@ function checkStoreURLs() {
     // in the function run through each URL in the URL column
     for (let j = 0; j < x; j++) {
         orderRow[j].onload = () => {
-            // check if the store's logo is on the s3 server ---------------------
-            // make an array of URLs from the logo URLs field and filter any duplicates
-            // for getting URLs from the Design Details (Store) field:
-            let URLTypes = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].innerText.split('\n');
-            URLTypes.pop(-1); // drop the last item from the array, its always empty
-            // create empty array to fill in the following loop with logo suffixes:
-            let logoSuffixArr = {};
-            URLS = []; // 
-            for (let i = 0; i < URLTypes.length; i++) { // loop within the logos req'd for an order
-                console.log(`URLTypes.length: ${URLTypes.length}`)
-                URLTypes[i] = URLTypes[i].split(' - ')[0];
-                console.log(`URLTypes[i]: ${URLTypes[i]}`);
-                switch (URLTypes[i]) {
-                    case "Digital Small":
-                        console.log('digital small');
-                        logoSuffixArr[i] = "ds.eps"
-                        break;
-                    case "Digital":
-                        console.log('digital');
-                        logoSuffixArr[i] = "d.eps"
-                        break;
-                    case "Sticker":
-                        console.log('stickers');
-                        logoSuffixArr[i] = "s.eps"
-                        break;
-                    case "Hats":
-                        console.log('hats');
-                        logoSuffixArr[i] = "h.png"
-                        break;
-                    case "Embroidery":
-                        console.log('emb');
-                        logoSuffixArr[i] = "e.png"
-                        break;
-                    default:
-                        console.log('default');
-                        break;
-                }
-                URLS.push(s3Url + orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText + "_" + logoSuffixArr[i]);
-                verbosity(`\t\tpushed ${URLS[i]} to URLS`)
-                // exit loop for i
+        // check if the store's logo is on the s3 server ---------------------
+        // make an array of URLs and filter any duplicates
+        let URLTypes = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].innerText.split('\n');
+        // URLTypes.pop(-1);
+        let logoSuffixArr = {};
+        var URLS = [];
+        for (let i = 0; i < URLTypes.length; i++) { // loop within the logos req'd for an order
+            console.log(`URLTypes.length: ${URLTypes.length}`)
+            URLTypes[i] = URLTypes[i].split(' - ')[0];
+            console.log(`URLTypes[i]: ${URLTypes[i]}`);
+            switch (URLTypes[i]) {
+                case "Digital Small":
+                    console.log('digital small');
+                    logoSuffixArr[i] = "ds.eps"
+                    break;
+                case "Digital":
+                    console.log('digital');
+                    logoSuffixArr[i] = "d.eps"
+                    break;
+                case "Sticker":
+                    console.log('stickers');
+                    logoSuffixArr[i] = "s.eps"
+                    break;
+                case "Hats":
+                    console.log('hats');
+                    logoSuffixArr[i] = "h.png"
+                    break;
+                case "Embroidery":
+                    console.log('emb');
+                    logoSuffixArr[i] = "e.png"
+                    break;
+                default:
+                    console.log('default');
+                    break;
             }
-            URLS = [...new Set(URLS)];
-        verbosity(`\t\tURLS: ${URLS}\n`);
-            // for each URL in the field check validity
-            for (let i = 0; i < URLS.length; i++) {
-            verbosity(`${j}/${x} ----------\n\tURLS length: ${URLS.length}\n\tURLS:${URLS}`)
-                checkValidS3Link(
-                    URLS[i],
-                    (callback) => {
-                        if (callback) {
-                            orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:✔️`
-                            verbosity(`URL Valid`)
-                        } else {
-                            orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:❌`
-                            verbosity(`URL Invalid`)
-                        }
-                    }
-                )   // End of the checkValidS3Link 
-
-            }   // End of the for loop
+            URLS.push(s3Url + orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText + "_" + logoSuffixArr[i]);
+            verbosity(`\t\tpushed ${URLS[i]} to URLS`)
+            // exit loop for i
         }
-        orderRow[j].onload();
+        URLS = [...new Set(URLS)];
+        verbosity(`\t\tURLS: ${URLS}\n`);
+        // for each URL in the field check validity
+        for (let i = 0; i < URLS.length; i++) {
+            verbosity(`${j}/${x} ----------\n\tURLS length: ${URLS.length}\n\tURLS:${URLS}`)
+            checkValidS3Link(
+                URLS[i],
+                (callback) => {
+                    if (callback) {
+                        orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:✔️`
+                        verbosity(`URL Valid`)
+                    } else {
+                        orderRow[j].getElementsByTagName(orderCol)[1].innerText += `\n${URLS[i].split('/')[4].split('_')[1].split('.')[0]}:❌`
+                        verbosity(`URL Invalid`)
+                    }
+                }
+            )   // End of the checkValidS3Link 
+            
+        }   // End of the for loop
+        }
+    orderRow[j].onload();
     }
 }
 
@@ -769,4 +780,4 @@ if (eeyore != 'sad') {
     //   document.head.appendChild(styleSheet)
     //set eeyore to 'sad' to only run this code block once.
     eeyore = 'sad';
-};
+    };
