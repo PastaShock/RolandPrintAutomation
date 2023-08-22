@@ -336,7 +336,13 @@ orderlist = function createDataset() {
             //main body of the script for fetching the information from the page.
             salesOrder = () => {
                 try {
-                    return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText;
+                    if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText === 'Download') { 
+                        salesOrder = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column - 2].innerText
+                    } else if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText === "\u00a0") {
+                        salesOrder = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column - 1].innerText
+                    } else {
+                        salesOrder = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText
+                    }
                 }
                 catch (err) {
                     console.log('sales order ID not found, cancelling script');
@@ -429,7 +435,7 @@ orderlist = function createDataset() {
             //create return object (json?) for downloading.
             orders[orderId] = new classOrder(
                 orderId,
-                salesOrder(),
+                salesOrder,
                 fundId,
                 magentoId(),
                 fundName,
@@ -712,7 +718,7 @@ function checkStoreURLs() {
                     console.log('digital');
                     logoSuffixArr[i] = "d.eps"
                     break;
-                case "Sticker":
+                case "Stickers":
                     console.log('stickers');
                     logoSuffixArr[i] = "s.eps"
                     break;
