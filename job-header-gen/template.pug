@@ -1,0 +1,29 @@
+doctype html html(lang='eng')
+head
+    title job-header
+    style
+        include stylesheet.css
+body
+    div(class='first-order-flexbox')
+        div(class='order-information')
+            div(class='data', id='job-id')
+                p(class='identifier') job-id
+                p(class='content') #{jobId}
+            div(class='data', id='date-range')
+                p(class='identifier') placed
+                p(class='content') #{datePlaced}
+            div(class='data', id='date-current')
+                p(class='identifier') printed
+                p(class='content') #{dateCurrent}
+            div(class='data', id='printer-user')
+                p(class='identifier') print-user
+                p(class='content') #{user}
+            div(class='data', id='printer-device')
+                p(class='identifier') printer
+                p(class='content') #{printer}
+            //- div(class='data', id='barcode')
+            //-     p(class='identifier') barcode
+            //-     p(class='content') #{barcode}
+        div(class='job-order-type priority')
+            h1 #{orderType}
+    hr

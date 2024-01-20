@@ -1,7 +1,7 @@
 #Aliased to yeet
 #use options to direct how the files are treated
 #
-#FOR NETSUITE; VERSION 1
+#FOR NETSUITE; VERSION 2
 
 [cmdletBinding()]
     param(
@@ -31,7 +31,12 @@
         # Should be used in conjunction with -p but should still copy_
         # the files to q A while moving the files to the reorder dir
         [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
-        [Switch] $d
+        [Switch] $d,
+#   _____________
+        #JobGuid \___________________________________________
+        # -jobId : orders printed on rolanda : Moves files to the Rolanda dir
+        [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
+        [String[]] $jobId
     )
 
 clear-content -path $printlist;
@@ -52,7 +57,15 @@ $orders = get-content $orders | convertfrom-json
 # displayed as:
 # orders: @{6494728=; 6691294=; 6691295=; 6691296=; 6691297=; 6691501=; 6691587=}
 write-output "orders: $orders"
-# I forgot what I use this for
+
+# create a guid for the job ID, here to add to the database as soon as possible
+#       80dd9be5-7d9c-4a00-af8d-26eb539099db
+if (!$jobId) {
+    $jobId = (New-Guid).Guid
+    Write-Host "created new GUID for the Job ID..."
+}
+
+# Set $list to members of $orders
 $list = $orders | Get-Member
 # get all the the 'names' of the objects
 $list = ($list | select-object -property 'Name')
@@ -71,8 +84,11 @@ for ($i = 4; $i -lt $list.length; $i++) {
         $CURRENTORDER.printDate = (Get-Date -Format "ddd MMM dd yyyy HH:mm:ss G\MTK") + " (Pacific Daylight Time)"
         # add property with value username
         $CURRENTORDER | Add-Member -MemberType noteProperty -Name printUser -value $env:USERNAME
+        $CURRENTORDER | Add-Member -MemberType noteProperty -Name jobId -value $jobId
         $FUNDID = $orders.$j | select-object -expandproperty 'fundId'
         #write-output "fund id: $FUNDID"
+        # add the placed date of the order to the $ORDERSDATERANGE array:
+        # $ORDERSDATERANGE += $CURRENTORDER.placedDate
         add-content -path $printlist -value $ORDERID
         # The following cases can be made to move/sort the orders in the file system automatically like so:
         # switch $orderType

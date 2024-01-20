@@ -51,7 +51,7 @@ for ($i = 0; $i -lt $b.count; $i++) {
     # $newName -ne $b[$i].name;
     if ($newName -eq "") { return }
     if ((Test-Path $newName) -and ($newName -ne $b[$i].name)) {
-        Write-Output "`t deleting file $newName`n"
+        # Write-Output "`t deleting file $newName`n"
         # Write-Output "newName: $newName"
         # Write-Output "b[i]: $b[$i].name"
         # Write-Host -NoNewLine 'Press any key to continue...';
@@ -60,12 +60,16 @@ for ($i = 0; $i -lt $b.count; $i++) {
     }
     else {
         if ($newName -eq $b[$i]) { return }
-        Write-Output "`t renaming file: $newName"
+        # Write-Output "`t renaming file: $newName"
         # Write-Host -NoNewLine 'Press any key to continue...';
         # $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
         $b[$i] | rename-item -newname { $newName }
     }
 }
+
+# copy all PNGs to the embroidery digitizing queue:
+move-item "*.png" "$ShareDrive`embroidery\PNGs\" -force
+
 Remove-Item "*(*).pdf"
 Remove-Item "*(*).json"
 #get-childitem -include '*.eps' -r | rename-item -newname {$_.Name -replace "_20" , ""}

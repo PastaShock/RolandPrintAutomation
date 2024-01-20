@@ -1,0 +1,11 @@
+{
+  "name": "print-job-header-gen",
+  "version": "1.0.0",
+  "description": "A js applet that takes inbound info and applies the relevant information to the header for the orders that will be printed.",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest app.js"
+  },
+  "author": "George Pastushok",
+  "license": "ISC"
+}

@@ -1,21 +1,80 @@
 #print reprint requests pulled from slack thorugh powershell
 #george pastushok 2021 - georgepastushok@gmail.com
 
+# create parameter to accept values for a printer and reprint type:
+[CmdletBinding()]
+Param(
+    [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+    [Alias("p")]
+    [ValidateRange(1, 4)]
+    [int] $desiredPrinter
+)
+
+$printer = @("Mary-Kate", "Ashley", "Nicole", "Paris", "Rolanda");
+$p = $desiredPrinter - 1;
+$queue = "C:\ProgramData\Roland DG VersaWorks\VersaWorks\Printers\" + $printer[$p] + "\Input-B\"
+
+
 #create the file definition
 #should be a CSV file converted to PSObject
 $rep = Get-Content reprints.csv | ConvertFrom-Csv
 
+# copy the print job header to the queue
+cp $shareDrive\press-reprints.eps $queue
+cp $shareDrive\weeding-masking-reprints.eps $queue
+
 #main loop
 foreach ($req in $rep) {
-    rep $req.orderId;
+    $orderId = $req.orderId;
+    $logoSize = $req.logosize;
+    $order = $orders.$orderId | Select-Object -f 1
+    $fundId = $order.fundId
+    # rep $req.orderId;
+    write-host "url`t     : https://4766534.app.netsuite.com/app/accounting/transactions/salesord.nl?id=$orderId&whence"
+    $orders.($orderId)
     write-host  "size:`t`t" $req.logosize;
     write-host  "quantity:`t" $req.quantity;
     Write-Host  "error:`t`t" $req.error;
     write-host  "type:`t`t" $req.type;
-    Pause;
-}
-    function pause() {
-        Write-Host -NoNewLine 'Press any key to continue...';
-        $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
-        write-host "continuing..."
+    # check if the logo size is valid:
+    Switch ($logoSize) {
+        "digital" { write-host "changing to logo size `"d`" from digital"; $logoSize = "d" }
+        "8x4" { write-host "changing to logo size `"d`" from digital"; $logoSize = "d" }
+        "digital small" { write-host "changing to logo size `"ds`" from digital small"; $logoSize = "ds" }
+        "small" { write-host "changing to logo size `"ds`" from small"; $logoSize = "ds" }
     }
+    $logoSize = $logoSize.ToLower();
+    # copy requested file to a print queue:
+    # write-host "orderid: $orderId, logoSize: $logoSize, fundId: $fundId"
+    # write-host "$fundId`_$logoSize.eps"
+    $orderLocation = (Get-ChildItem -path "$ShareDrive`AA*" -include "PICKING*$orderId.pdf" -r | select -f 1).directory
+    # $fileLocation = (get-childitem -path "F:\AA*" -include "$fundId`_$logoSize.eps" -r | select -f 1).FullName
+    $fileLocation = (get-childitem -path $orderLocation -include "$fundId`_$logoSize.eps" -r | select -f 1).FullName
+    # explorer /select,$filelocation
+    # write-host "fileLocation: $fileLocation"
+    if ($fileLocation) {
+        if ($req.error -eq "b") {
+            write-host "Art error, paused to check logos and submit to art team..."
+            Pause;
+        }
+        for ($i = 0; $i -lt $req.quantity; $i++) {
+            $index = $i + 1;
+            Copy-Item $fileLocation "$queue\$fundId`_$logoSize`_$index.eps"
+        }
+    }
+    else {
+        write-host "file not found, opening folder location"
+        explorer /select,$orderLocation
+        Pause;
+    }
+    if ($req.logoSize -eq "8x4" -Or $req.error -Contains "resize") {
+        write-host "Resize logo to 8x4; pausing...";
+        Pause;
+    }
+    # Pause;
+}
+function pause() {
+    Write-Host -NoNewLine 'Press any key to continue...';
+    $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
+    write-host "continuing..."
+}

@@ -1,7 +1,8 @@
 # print an order based on ID entry
-# 2020 George Pastushok
+# 2024 George Pastushok
 #
 # FOR NETSUITE; VERSION 1.2
+# updated to include job header generator
 
 [cmdletbinding()]
 Param(
@@ -20,6 +21,8 @@ Param(
     [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
     [Alias("type", "t")]
     [switch] $orderType,
+    [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
+    [String[]] $jobId,
     [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
     [bool] $verbosity,
     [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
@@ -124,12 +127,15 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
         start-sleep -seconds 2
         $intPath = (Get-ChildItem -path ($shareDrive + "AA*") -include "PICKINGTICKET$orderID.pdf" -r)
     }
+
+
     # print the internal picking slip PDF
     if (!($NoCopy)) {
         $intPath | foreach-object {
-            start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object {
-                Start-Sleep 1;
-            } | Stop-Process
+            start-process -FilePath $_.FullName -Verb PrintTo('GeorgesBrother') -PassThru | Out-Null
+            # start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object {
+                # Start-Sleep 1;
+            # } | Stop-Process
         }
     }
 
@@ -375,7 +381,7 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
 
     # Start sleep to add delay to keep order forms in the correct positions after printing.
     # Internal/picking slip; should be first, then the external/packing
-    if (!($verbosity)) {
+    if (!($NoCopy)) {
         start-sleep -Seconds 2
     }
 
@@ -391,9 +397,11 @@ function PrintIncentiveOrder($orderID, $p, $i, $orderType) {
     }
     if (!($NoPrint)) {
         $pdfPath | foreach-object {
-            start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object { ;
-                Start-Sleep 2;
-            } | Stop-Process;
+            start-process -FilePath $_.FullName -Verb PrintTo('GeorgesBrother') -PassThru | Out-Null
+            # OLD METHOD
+            # start-process -FilePath $_.FullName -Verb Print -PassThru | ForEach-Object { ;
+                # Start-Sleep 2;
+            # } | Stop-Process;
         }
     }
     # $dump = Get-Content orders.json
