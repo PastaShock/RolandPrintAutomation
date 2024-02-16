@@ -38,10 +38,13 @@ function jobHeaderGen($q) {
     # make sure that all variables are accounted for; arrays for printers, queues, users, dates etc
     #   - get placed dates from orders.json of all orders
     $date = @(); # init array for storage of dates of all orders
+    $ordersToTable = @() # Create/initialize an array for reformating orders.json
+
     $ORDERSJSON = (Get-Content .\orders.json | convertfrom-json);
     $ORDERSDATABASE = get-content $DATABASE | convertfrom-json
     $ORDERLIST = ($ORDERSJSON | get-member);
     $ORDERLIST = ($ORDERLIST | Select-Object -property 'Name');
+    
     for ($i = 4; $i -lt $ORDERLIST.length; $i++) {
         $ORDER = $ORDERLIST[$i] | Select-Object -expand 'Name';
         # $ORDERID = ($ORDERSJSON.$ORDER | Select-Object -expand 'orderId');
@@ -49,6 +52,7 @@ function jobHeaderGen($q) {
         $date += $CURRENTORDER.placedDate;
         $orderType = $CURRENTORDER.orderType;
         $jobId = ($ORDERSDATABASE.$ORDER).JobId;
+        $ordersToTable += $CURRENTORDER;
         $Global:jobId = $jobId;
     };
     # take the first and last item from the array and put them in a new array.
@@ -80,20 +84,23 @@ function jobHeaderGen($q) {
     switch ($orderType) {
         "OTK Purchases and Incentives" { $orderType = "Incentive/OTK" }
         "Snap!Store" { $orderType = "Store" }
-        "Coach Gear" { $orderType = "Reorders" }
-        "Reorder" { $orderType = "Reorders" }
+        "Coach Gear" { $orderType = "Reorders"; $priority = $true}
+        "Reorder" { $orderType = "Reorders"; $priority = $true}
         "OTF" { $orderType = "Incentive/OTK" }
         Default { $orderType = "Happy Orders!" }
     };
 
-    # Write-Output "`$jobId: $jobId"
-    # Write-Output "`$dateConcat: $dateConcat"
-    # Write-Output "`$currDate: $currDate"
-    # Write-Output "`$user: $user"
-    # Write-Output "`$printDevice[`$printqueue]: $PRINTDEVICE[$PRINTQUEUE]"
+    # orderstotable should now be full of all the orders and ready to convert to JSON
+    $table = $ordersToTable | Select-Object orderId,salesOrder,fundId,fundName,placedDate,logoScript,priColor,secColor,logoId,digital,digiSmall;
+    $JSONpayload = $table | ConvertTo-Json
+    # I am writing the JSON to a file because I could not get it to cooperate as just a string passed as a variable/object into node
+    Set-Content "C:\ps\job-top-sheet\temp.json" $JSONpayload
 
-    # call the function via node.js
-    node 'C:\ps\label_temp - Copy\app.js' --jobId="$jobId" --datePlaced="$dateConcat" --dateCurrent="$currDate" --user="$user" --printer="$PRINTDEVICE[$PRINTQUEUE]" --orderType="$orderType"
+    # call the following node.js applets: job-header-gen and job-top-sheet
+    node 'C:\ps\job-top-sheet\app.js' --jobId="$jobId" --datePlaced="$dateConcat" --dateCurrent="$currDate" --user="$user" --printer="$PRINTDEVICE[$PRINTQUEUE]" --orderType="$orderType" --priority="$priority"
+    node 'C:\ps\label_temp - Copy\app.js' --jobId="$jobId" --datePlaced="$dateConcat" --dateCurrent="$currDate" --user="$user" --printer="$PRINTDEVICE[$PRINTQUEUE]" --orderType="$orderType" --priority="$priority"
+    Move-Item "C:\ps\job-top-sheet\$Global:jobId-top-sheet.pdf" ..
+    Start-Process "..\$Global:jobId-top-sheet.pdf" -verb print
     # copy the file to the print queue:
     $headerPath = "C:\ps\label_temp - Copy\$jobId.pdf"
     while ((test-path $headerPath) -ne $true) {
@@ -119,25 +126,33 @@ if ($orderType -ne $true -and $roll -ne $true) {
 }
 elseif ($roll -ne $true -and $orderType -eq $true) {
     $q = 1
+    jobHeaderGen $q
     #write-output "Case1"
     get-content -path "$printlist" | foreach-object { incentive -i $_ -p $desiredPrinter -q $q -orderType -jobId $Global:jobId $verbosity }
 }
 elseif ($roll -eq $true -and $orderType -ne $true) {
     #write-output "Case2"
     $q = 3
+    jobHeaderGen $q
     get-content -path "$printlist" | foreach-object { incentive -i $_ -p $desiredPrinter -q $q -jobId $Global:jobId $verbosity }
     $folderDate = get-date -format "MMdd"
     $folderDate += "0$desiredPrinter"
-    copy-item 'orders.json' ..\r$folderDate\$folderDate.json; 
+    copy-item 'orders.json' ..\r$folderDate\$Global:jobId.json; 
 } 
 if (!($verbosity)) {
-    notepad $log
+    # notepad $log
     Move-Item 'orders.json' ..\$Global:jobId.json -Force
     # Copy the job header to the working folder:
     $date = get-date;
     $week = $date.AddDays([DayOfWeek]::Monday - [int]$date.DayOfWeek);
     $week = '{0:yyMMdd}' -f $week;
-    Move-Item "C:\ps\label_temp - Copy\$Global:jobId.pdf" "$shareDrive\AA$week\"
+    $jobDestination = "$shareDrive\AA$week\"
+    switch ($roll) {
+        $true { $jobDestination += "r$folderDate\" }
+        Default {}
+    }
+    Move-Item "C:\ps\label_temp - Copy\$Global:jobId.pdf" $jobDestination
+    notepad $jobDestination\$Global:jobId.json
 
 }
 

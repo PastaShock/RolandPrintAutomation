@@ -62,8 +62,11 @@ write-output "orders: $orders"
 #       80dd9be5-7d9c-4a00-af8d-26eb539099db
 if (!$jobId) {
     $jobId = (New-Guid).Guid
-    Write-Host "created new GUID for the Job ID..."
+    Write-Host "created new GUID for the Job ID: $jobId"
 }
+
+# declare / initialize empty array for building a table of the orders:
+$ordersToTable = @()
 
 # Set $list to members of $orders
 $list = $orders | Get-Member
@@ -84,7 +87,7 @@ for ($i = 4; $i -lt $list.length; $i++) {
         $CURRENTORDER.printDate = (Get-Date -Format "ddd MMM dd yyyy HH:mm:ss G\MTK") + " (Pacific Daylight Time)"
         # add property with value username
         $CURRENTORDER | Add-Member -MemberType noteProperty -Name printUser -value $env:USERNAME
-        $CURRENTORDER | Add-Member -MemberType noteProperty -Name jobId -value $jobId
+        $CURRENTORDER | Add-Member -MemberType noteProperty -Name jobId -value "$jobId"
         $FUNDID = $orders.$j | select-object -expandproperty 'fundId'
         #write-output "fund id: $FUNDID"
         # add the placed date of the order to the $ORDERSDATERANGE array:
@@ -139,9 +142,20 @@ for ($i = 4; $i -lt $list.length; $i++) {
             move-item "*$ORDERID.pdf" $DESTINATION -Force;
             write-host -foregroundcolor yellow "option roll selected: moving orders to $DESTINATION"
         }
+        # Add the current order's data set to the table array:
+        $ordersToTable += $CURRENTORDER
     }
 }
+# create the table and save it to a csv file:
+if ((test-path temp.csv) -eq $false) {
+    New-Item temp.csv
+}
+$table = $ordersToTable | Select-Object orderId,fundId,placedDate,fundName,jobId;
+$table | Format-Table -AutoSize;
+$table | Export-Csv temp.csv -NoTypeInformation;
+# Start-Process temp.csv -verb print;
 
+$Global:jobId = $jobId
 $toAdd = @()
 $toAdd += get-content $DATABASE | convertfrom-json
 $toAdd += $orders
