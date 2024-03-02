@@ -1,27 +1,26 @@
 //George Pastushok 2024
-//  -Updated January 2024
+//  -Updated March 2024
 
 //create a js file thatis created when the user selects orders and clicks the create package button. The button runs a function that checks for currently selected orders, gets their information, puts it into an object and creates a downloadable file with it.
 //following variable declarations are order specific data
-var orderId = 0
-var fundId = 0
-var magentoId = 0
-var fundName = ""
-var placedDate = 0
-var downloadDate = 0
-var printDate = 0
-var orderType = 0
-var logoScript = ""
-var priColor = ""
-var secColor = ""
-var logoId = 0
+var order_id = 0
+var fundraiser_id = 0
+var magento_id = 0
+var fundraiser_name = ""
+var placed_on_date = 0
+var date_downloaded = 0
+var order_type = 0
+var logo_script = ""
+var primary_color = ""
+var secondary_color = ""
+var logo_id = 0
 //next variable are going to be counts of logos per size
 var eleven = 0
 var eight = 0
 var six = 0
 var five = 0
 var four = 0
-var COUNTELEVEN = {}
+var COUNTELEVEN = []
 var ORDERS_SELECTED = {}
 var PASTSELECTION = 0
 var storeDesignDetailsColumnShift = 20        
@@ -34,7 +33,7 @@ var j //for incrementing within the order card
 var y //for storing the number of items within an order card.
 
 //constants
-orders = {}
+orders = []
 orderlist = {}
 url = 'https://4766534.app.netsuite.com/app/common/search/searchresults.nl?searchid=673&dle=T'
 s3Url = "https://snapraiselogos.s3.us-west-1.amazonaws.com/Warehouse-Logos/"
@@ -111,8 +110,8 @@ function init() {
         // this should work on all orders, and all orders have a valid Design Details Columns
         const LOGOSPERORDER = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText.split('\n')
         const NUMBEROFLOGOSPERORDER = LOGOSPERORDER.length
-        const orderId = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
-        verbosity(`init()`,`34`,`j:${j}/x:${x}: order ${orderId} has ${NUMBEROFLOGOSPERORDER} logo sizes`)
+        const order_id = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
+        verbosity(`init()`,`34`,`j:${j}/x:${x}: order ${order_id} has ${NUMBEROFLOGOSPERORDER} logo sizes`)
         // loop through each logo size on an order to quantity per size
         for (let f = 0; f < NUMBEROFLOGOSPERORDER; f++) {
             // LOGOCOUNTS is populated from the Design Details column (COLDD)
@@ -149,7 +148,7 @@ function init() {
         ORDERCOUNTDIV.appendChild(ORDERCOUNT)
         orderRow[j].getElementsByTagName(orderCol)[1].appendChild(ORDERCOUNTDIV)
 
-        // start the process to add the fund ID to the fundId column for store orders.
+        // start the process to add the fund ID to the fundraiser_id column for store orders.
         currentFundName = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText
 
         if (currentFundName == snapStore) {
@@ -158,11 +157,11 @@ function init() {
             let CellLogoURLs = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column]
             let CellDDStore = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column - storeDDS[j]]
             if ( ( CellLogoURLs.innerText === '\xa0') && ( CellDDStore.innerText !== '\xa0') ) {
-                verbosity(`init()`,`81`,`store order: ${orderId} ----------`)
+                verbosity(`init()`,`81`,`store order: ${order_id} ----------`)
                 let storeFundId = CellDDStore.getElementsByTagName('a')[0].getAttribute('onclick').split('/')[4].split('_')[0]
                 // storeFundId = storeFundId[storeFundId.length - 1].split('.')[0].split('_')[0];
                 if (storeFundId !== "Download") {
-                    // print the fundId in the Fund ID column
+                    // print the fundraiser_id in the Fund ID column
                     verbosity(`init()`,`86`,`order FundId is not 'Download': ${storeFundId}`)
                     orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText = storeFundId;
                 }
@@ -185,7 +184,7 @@ function init() {
             createIMGfromS3(storeS3LinkFileName, j);
         } else {
             let incentiveLogoS3Link = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText;    // not a store order in this case!
-            verbosity(`init()`,`92`,`incentive order fundId(storeS3LinkFileName): ${incentiveLogoS3Link}`)
+            verbosity(`init()`,`92`,`incentive order fundraiser_id(storeS3LinkFileName): ${incentiveLogoS3Link}`)
             createIMGfromS3(incentiveLogoS3Link, j);
         }
         verbosity(`init()`,`97`,`storeDDS is : ${storeDDS[j]}`)
@@ -230,49 +229,14 @@ function changeState(elStateToChange) {
     orderState = orderRow[elStateToChange].getElementsByTagName(orderCol)[COLUMNS.COLWS.column];
     if (toggleEl.getAttribute('class') == 'toggled-off order-toggle') {
         toggleEl.setAttribute('class', 'toggled-on order-toggle')
-        //set workflow stage to "Weeding and Masking"
-        // orderState.click();
-        // setTimeout(() => {
-        // orderState.getElementsByTagName('input')[0].value = 'Weeding & Masking';
-        // }, 100)
-        // setTimeout(() => {
-        //     orderState.getElementsByTagName('input')[1].value = 5;
-        // }, 200)
-        // setTimeout(() => {
-        //     orderState.getElementsByTagName('input')[2].value = 3;
-        // }, 300)
-        // setTimeout(() => {
-        //     orderState.getElementsByClassName('listEditSpan')[0].setAttribute('ntv_val', 5);
-        // }, 400)
-        // setTimeout(() => {
-        //     orderState.click();
-        // }, 600)
         orderState.getElementsByTagName('span')[0].innerText = "Weeding & Masking";
         verbosity(`changeState()`,`23`,`set order ${elStateToChange} to weeding and masking`)
     } else {
         toggleEl.setAttribute('class', 'toggled-off order-toggle')
-        //set workflow stage to "Printing"
-        // orderState.click();
-        // setTimeout(() => {
-        // orderState.getElementsByTagName('input')[0].value = 'Printing';
-        // }, 100)
-        // setTimeout(() => {
-        //     orderState.getElementsByTagName('input')[1].value = 3;
-        // }, 150)
-        // setTimeout(() => {
-        //     orderState.getElementsByTagName('input')[2].value = 2;
-        // }, 200)
-        // setTimeout(() => {
-        //     orderState.getElementsByClassName('listEditSpan')[0].setAttribute('ntv_val', 3);
-        // }, 250)
-        // setTimeout(() => {
-        //     orderState.click();
-        // }, 600)
         orderState.getElementsByTagName('span')[0].innerText = "Printing";
         verbosity(`changeState()`,`44`,`set order ${elStateToChange} to printing`)
     }
 }
-
 
 //create a console save function to download the information of the order(s).
 console.save = function (data, filename) {
@@ -299,38 +263,65 @@ console.save = function (data, filename) {
     a.dispatchEvent(e)
 }
 
+jobData = () => {
+    // create new function to pull job information and package it into JSON
+    // I need:
+    //  - a job ID (from the DB?)
+    //  - download date (when I press the download button)
+    //  - And added later from powershell:
+    //      - User ID/ User Name
+    //      - print date
+    //      - printer id
+    //      - print queue
+}
+
 //function that called to run the script
 orderlist = function createDataset() {
     //object definitiion or template for data
-    class classOrder { constructor(orderId, salesOrder, fundId, magentoId, fundName, placedDate, downloadDate, printDate, orderType, orderNotes, logoScript, priColor, secColor, logoId, eleven, eight, six, five, four, digital, digiSmall, embroidered, sticker, banner) { this.orderId = orderId; this.salesOrder = salesOrder; this.fundId = fundId; this.magentoId = magentoId; this.fundname = fundName; this.placedDate = placedDate; this.downloadDate = downloadDate; this.printDate = printDate; this.orderType = orderType; this.orderNotes = orderNotes; this.logoScript = logoScript; this.priColor = priColor; this.secColor = secColor; this.logoId = logoId; this.eleven = eleven; this.eight = eight; this.six = six; this.five = five; this.four = four; this.digital = digital; this.digiSmall = digiSmall; this.embroidered = embroidered, this.sticker = sticker; this.banner = banner } }
+    class classOrder { constructor(
+        order_id,
+        sales_order_id,
+        fundraiser_id,
+        magento_id,
+        fundraiser_name,
+        placed_on_date,
+        date_downloaded,
+        order_type,
+        order_notes,
+        logo_script,
+        primary_color,
+        secondary_color,
+        logo_id,
+        logo_count_digital,
+        logo_count_digital_small,
+        logo_count_embroidered,
+        logo_count_sticker,
+        logo_count_banner
+    ) {
+        this.order_id = order_id;
+        this.sales_order_id = sales_order_id;
+        this.fundraiser_id = fundraiser_id;
+        this.magento_id = magento_id;
+        this.fundname = fundraiser_name;
+        this.placed_on_date = placed_on_date;
+        this.date_downloaded = date_downloaded;
+        this.order_type = order_type;
+        this.order_notes = order_notes;
+        this.logo_script = logo_script;
+        this.primary_color = primary_color;
+        this.secondary_color = secondary_color;
+        this.logo_id = logo_id;
+        this.logo_count_digital = logo_count_digital;
+        this.logo_count_digital_small = logo_count_digital_small;
+        this.logo_count_embroidered = logo_count_embroidered,
+        this.logo_count_sticker = logo_count_sticker;
+        this.logo_count_banner = logo_count_banner
+    } }
     verbosity('createDataset()`,`3`,`created class ClassOrder');
     //for loop to increment inbetween orders
     for (let i = 0; i < x; i++) {
         verbosity(`createDataset()`,`6`,`for loop i:${i}`);
-        //first things first, zero out all variables.
-        // orderId = salesOrder = fundId = fundName = placedDate = downloadDate = printDate = orderType = logoScript = priColor = secColor = logoId = eleven = eight = six = five = four = digital = digiSmall = sticker = banner = 0;
-        verbosity('createDataset()`,`9`,`zeroed out all variables for JSON payload');
         imageApplicationTypes = [
-            {
-                name: '11x6',
-                value: undefined,
-            },
-            {
-                name: '8x4',
-                value: undefined,
-            },
-            {
-                name: '6x3',
-                value: undefined,
-            },
-            {
-                name: '5x3',
-                value: undefined,
-            },
-            {
-                name: '4x3',
-                value: undefined,
-            },
             {
                 name: 'digital',
                 value: undefined,
@@ -356,26 +347,26 @@ orderlist = function createDataset() {
         //check if an order is checked off for printing
         checkChecked = orderRow[i].getElementsByClassName(constCheck)[0].getAttribute('class') == "toggled-on order-toggle"
         if (checkChecked) {
-            const orderId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
+            const order_id = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText
             verbosity(`createDataset()`,`57`,`checkChecked = True`);
             //main body of the script for fetching the information from the page.
-            salesOrder = () => {
+            sales_order_id = () => {
                 try {
                     if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText === 'Download') { 
-                        salesOrder = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column - 2].innerText
+                        sales_order_id = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column - 2].innerText
                     } else if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText === "\u00a0") {
-                        salesOrder = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column - 1].innerText
+                        sales_order_id = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column - 1].innerText
                     } else {
-                        salesOrder = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText
+                        sales_order_id = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLSO.column].innerText
                     }
                 }
                 catch (err) {
                     verbosity(`createDataset()`,`70`,`sales order ID not found, cancelling script`);
-                    throw 'invalid salesOrder ID number';
+                    throw 'invalid sales_order_id ID number';
                 }
             };
-            fundId = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText
-            magentoId = () => {
+            fundraiser_id = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText
+            magento_id = () => {
                 try {
                     if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLMC.column].innerText !== "\u00a0") {
                         return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLMC.column].innerText;
@@ -385,11 +376,11 @@ orderlist = function createDataset() {
                     return undefined;
                 }
             };
-            fundName = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText.split('(')[0].trim();
-            placedDate = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLPD.column].innerText;
-            downloadDate = Date();
-            orderType = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText;
-            orderNotes = () => {
+            fundraiser_name = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText.split('(')[0].trim();
+            placed_on_date = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLPD.column].innerText;
+            date_downloaded = Date();
+            order_type = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText;
+            order_notes = () => {
                 try {
                     if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLON.column].innerText !== "\u00a0") {
                         return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLON.column].innerText;
@@ -400,7 +391,7 @@ orderlist = function createDataset() {
                     return undefined;
                 }
             }
-            logoScript = () => {
+            logo_script = () => {
                 try {
                     if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[1] === undefined) {
                         throw err
@@ -408,25 +399,25 @@ orderlist = function createDataset() {
                         return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[1];
                     }
                 } catch (err) {
-                    verbosity(`createDataset()`,`108`,`row ${i} order ${orderId} no logo script was detected`);
+                    verbosity(`createDataset()`,`108`,`row ${i} order ${order_id} no logo script was detected`);
                     return undefined;
                 }
             };
-            priColor = () => {
+            primary_color = () => {
                 try {
                     return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[2].split(':')[1].split('-')[0].trim();
                 } catch (err) {
                     return undefined;
                 }
             };
-            secColor = () => {
+            secondary_color = () => {
                 try {
                     return orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[2].split(':')[2].trim();
                 } catch (err) {
                     return undefined;
                 }
             };
-            logoId = () => {
+            logo_id = () => {
                 try {
                     if (orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLLD.column].innerText.split('\n')[0].split(' ')[1] === undefined) {
                         throw err
@@ -439,7 +430,7 @@ orderlist = function createDataset() {
             };
             orderRowEl = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDF.column].innerText
             logoCountsBySize = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText
-            verbosity(`createDataset()`,`139`,`orderId: ${orderId} \n salesOrder: ${salesOrder()} \n fundId: ${fundId} \n fundName: ${fundName} \n magentoId: ${magentoId()} \n placedDate: ${placedDate} \n downloadDate: ${downloadDate} \n orderType: ${orderType} \n logoScript: ${logoScript()}`)
+            verbosity(`createDataset()`,`139`,`order_id: ${order_id} \n sales_order_id: ${sales_order_id()} \n fundraiser_id: ${fundraiser_id} \n fundraiser_name: ${fundraiser_name} \n magento_id: ${magento_id()} \n placed_on_date: ${placed_on_date} \n date_downloaded: ${date_downloaded} \n order_type: ${order_type} \n logo_script: ${logo_script()}`)
             for (let j = 0; j < logoCountsBySize.split('\n').length; j++) {
                 verbosity(`createDataset()`,`141`,`for loop j:${j}/${orderRowEl}`);
                 verbosity(`createDataset()`,`142`,`orderRowEl: ${orderRowEl} \t logoCountsBySize: ${logoCountsBySize.split('\n').length}`)
@@ -458,39 +449,31 @@ orderlist = function createDataset() {
                 }
             }
             //create return object (json?) for downloading.
-            orders[orderId] = new classOrder(
-                orderId,
-                salesOrder,
-                fundId,
-                magentoId(),
-                fundName,
-                placedDate,
-                downloadDate,
-                printDate,
-                orderType,
-                orderNotes(),
-                logoScript(),
-                priColor(),
-                secColor(),
-                logoId(),
+            orders.push( new classOrder(
+                order_id,
+                sales_order_id,
+                fundraiser_id,
+                magento_id(),
+                fundraiser_name,
+                placed_on_date,
+                date_downloaded,
+                order_type,
+                order_notes(),
+                logo_script(),
+                primary_color(),
+                secondary_color(),
+                logo_id(),
                 imageApplicationTypes[0].value,
                 imageApplicationTypes[1].value,
                 imageApplicationTypes[2].value,
                 imageApplicationTypes[3].value,
                 imageApplicationTypes[4].value,
-                imageApplicationTypes[5].value,
-                imageApplicationTypes[6].value,
-                imageApplicationTypes[7].value,
-                imageApplicationTypes[8].value,
-                imageApplicationTypes[9].value
-            )
+            ))
             verbosity(`createDataset()`,`183`,`created class ClassOrder with data: ${JSON.stringify(orders)}`)
         }
     }
     return orders;
 }
-//console.log(orders)
-//orders = createDataset()
 
 function createDownloadButton() {
     dlButtonTable = document.createElement('table')
@@ -547,7 +530,6 @@ if (COUNTSELECTEDORDERS() != PASTSELECTION()) {
         return l
     };
     // PASTSELECTION() = COUNTSELECTEDORDERS();
-    //console.log(COUNTSELECTEDORDERS());
     document.getElementsByClassName('uir-list-name')[0].innerText = 'orders selected: ' + COUNTSELECTEDORDERS() + ' number of 11x6: ' + COUNTSELECTEDLOGOS()
     // verbosity('updated page header')
 }
@@ -590,7 +572,7 @@ function quickDL() {
         let currentIterableRow = orderRow[i].getElementsByTagName(orderCol)[0];
         // check that the row's checkbox is checked
         if (currentIterableRow.getElementsByClassName('toggled-on')[0]) {
-            // log the orderId in the console
+            // log the order_id in the console
             verbosity(`quickDL()`,`11`,`checked order @ index: ${i} ${orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOI.column].innerText}`)
             // add the row index to the array for reference later
             checkedOrders.push(i)
@@ -647,11 +629,11 @@ function quickDL() {
                         verbosity(`quickDL()`,`64`,`${builtURL}`)
                         builtURLS.push(builtURL);
                     }
-                    // method 2: Just grab the fundId from the fundId column and download all available from s3 bucket
-                    // let fundId = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText
-                    // builtURLS.push(`${s3Url}${fundId}_d.eps`);
-                    // builtURLS.push(`${s3Url}${fundId}_ds.eps`);
-                    // builtURLS.push(`${s3Url}${fundId}_s.eps`);
+                    // method 2: Just grab the fundraiser_id from the fundraiser_id column and download all available from s3 bucket
+                    // let fundraiser_id = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText
+                    // builtURLS.push(`${s3Url}${fundraiser_id}_d.eps`);
+                    // builtURLS.push(`${s3Url}${fundraiser_id}_ds.eps`);
+                    // builtURLS.push(`${s3Url}${fundraiser_id}_s.eps`);
                     return builtURLS;
                 }
               s3URLS = s3LinksArray();
@@ -662,10 +644,10 @@ function quickDL() {
                     verbosity(`quickDL()`,`78`,`j:${j}\ti:${i}\t${s3URLS[i]}`);
                     if (imgExt === 'h.png' || imgExt === 'e.png') {
                         verbosity(`quickDL()`,`80`,`j:${j}\ti:${i}\t${s3URLS[i].split('_')[1]}`);
-                        pngfundId = s3URLS[i].split('/')[4].split('_')[0];
-                        verbosity(`quickDL()`,`82`,`j:${j}\ti:${i}\t${pngfundId}`)
+                        pngfundraiser_id = s3URLS[i].split('/')[4].split('_')[0];
+                        verbosity(`quickDL()`,`82`,`j:${j}\ti:${i}\t${pngfundraiser_id}`)
                         fileext = s3URLS[i].split('_')[1];
-                        filename = pngfundId + '_' + imgExt;
+                        filename = pngfundraiser_id + '_' + imgExt;
                         verbosity(`quickDL()`,`85`,`j:${j}\ti:${i}\t${filename}`)
                         forceDownload(s3URLS[i], filename);
                     } else {
@@ -838,15 +820,15 @@ function storeDLbyURL() {
     }
 }
 
-function createIMGfromS3(fundId,row) {
-    verbosity(`createIMGfromS3()`,`1`,`creating img placeholder for fundID: ${fundId} @ row: ${row}`);
+function createIMGfromS3(fundraiser_id,row) {
+    verbosity(`createIMGfromS3()`,`1`,`creating img placeholder for fundID: ${fundraiser_id} @ row: ${row}`);
     let imgSize = 100;
     var placeHolder = document.createElement("img");
     placeHolder.setAttribute("style",`
         background:url(https://img.freepik.com/premium-vector/transparent-photoshop-illustrator-background-grid-transparency-effect-seamless-pattern-with-trans_231786-6635.jpg);
         background-size:400px;
     `);
-    placeHolder.setAttribute("src",("https://snapraiselogos.s3.us-west-1.amazonaws.com/PrinterLogos/" + fundId + "_d.png"));
+    placeHolder.setAttribute("src",("https://snapraiselogos.s3.us-west-1.amazonaws.com/PrinterLogos/" + fundraiser_id + "_d.png"));
     placeHolder.setAttribute("height", imgSize);
     placeHolder.setAttribute("width", imgSize);
     orderRow[row].getElementsByTagName(orderCol)[COLUMNS.COLMC.column].appendChild(placeHolder);
