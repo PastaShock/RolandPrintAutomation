@@ -51,7 +51,7 @@ function jobHeaderGen($q) {
         $CURRENTORDER = $ORDERSJSON.$ORDER;
         $date += $CURRENTORDER.placedDate;
         $orderType = $CURRENTORDER.orderType;
-        $jobId = ($ORDERSDATABASE.$ORDER).JobId;
+        $jobId = ($ORDERSDATABASE.$ORDER | select -f 1).JobId;
         $ordersToTable += $CURRENTORDER;
         $Global:jobId = $jobId;
     };
