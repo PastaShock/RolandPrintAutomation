@@ -1,3 +1,6 @@
 [submodule "job-top-sheet"]
 	path = job-top-sheet
 	url = git@github.com:PastaShock/print-job-top-sheet.git
+[submodule "RPA-DB-Conversion"]
+	path = RPA-DB-Conversion
+	url = git@github.com:PastaShock/RPA-DB-Conversion.git
