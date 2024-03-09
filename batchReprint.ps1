@@ -35,7 +35,6 @@ foreach ($req in $rep) {
     if ($response -eq 200) {
         $fundId = $order.fundraiser_id
         # rep $req.orderId;
-        write-host "url`t     : https://4766534.app.netsuite.com/app/accounting/transactions/salesord.nl?id=$orderId"
         $order
         write-host  "size:`t`t" $req.logosize;
         write-host  "quantity:`t" $req.quantity;
