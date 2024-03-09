@@ -22,8 +22,8 @@ $queue = "C:\ProgramData\Roland DG VersaWorks\VersaWorks\Printers\" + $printer[$
 $rep = Get-Content reprints.csv | ConvertFrom-Csv
 
 # copy the print job header to the queue
-cp $shareDrive\press-reprints.eps $queue
-cp $shareDrive\weeding-masking-reprints.eps $queue
+Copy-Item $shareDrive\press-reprints.eps $queue
+Copy-Item $shareDrive\weeding-masking-reprints.eps $queue
 
 #main loop
 foreach ($req in $rep) {
