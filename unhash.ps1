@@ -42,8 +42,8 @@ function renameRegex($filename) {
 # Create a script that cycles through the orders.json and finds all fund IDs and checks if they're here:
 function checkLogos() {
     $workingDir = $pwd.path
-    $ordersList = get-content orders.json | convertfrom-json
-    $ordersIndex = @($ordersList | Get-Member | Select-Object -Property 'name')
+    $ordersIndex = get-content orders.json | convertfrom-json
+    # $ordersIndex = @($ordersList | Get-Member | Select-Object -Property 'name')
     for ($i = 4; $i -lt $ordersIndex.length; $i++) {
         $order = $ordersList.$($ordersIndex[$i].name)
         if ($order.digital) {
@@ -73,21 +73,21 @@ function logoDownload($logoname, $workingDir) {
         )
         switch ($RESPONSE) {
             200 {
-                Write-Host "✅ URL is valid, downloading file..." -ForegroundColor "green"
+                Write-Host "`❎ URL is valid, downloading file..." -ForegroundColor "green"
                 downloadFile $URI $logoname $workingDir
             }
             {$_ -ge 400 -and $_ -le 499} {
-                Write-Host "🤦file doesn't exist, submit ticket to Art Team" -ForegroundColor "red"
+                Write-Host "`❌ file doesn't exist, submit ticket to Art Team" -ForegroundColor "red"
                 Write-Host "url`t     : https://4766534.app.netsuite.com/app/accounting/transactions/salesord.nl?id=$($order.orderId)" -NoNewline
                 $order | Format-List
                 Write-Host "S3url`t     : $URI`n"
                 Pause
             }
             {$_ -ge 500 -and $_ -le 599} {
-                Write-Host "💣 server error, try again later" -ForegroundColor "red"
+                Write-Host "⚡ server error, try again later" -ForegroundColor "red"
             }
             Default {
-                Write-Host "☠️ something has gone terribly wrong, sorry." -ForegroundColor "red"
+                Write-Host "☠ something has gone terribly wrong, sorry." -ForegroundColor "red"
             }
         }
     }
@@ -96,6 +96,17 @@ function logoDownload($logoname, $workingDir) {
 
 function downloadFile($URI,$fileName,$directory) {
     Invoke-WebRequest -URI $URI -OutFile "$directory\$fileName"
+}
+
+function deleteBrokenPickSlips() {
+    $pickSlipList = Get-ChildItem -include PICK*.pdf -r;
+    $pickSlipList | ForEach-Object {
+        write-host "checking file $($_.name) $($_.length)";
+        if (($_.Length -lt 81000) -and ($_.length -gt 76000)) {
+            write-host "deleting ${$_.fullName} :: invalid filesize : ${$_.length}"
+            remove-item $_.FullName
+        }
+    }
 }
 
 $b = Get-ChildItem -include '*.eps' -r; # | Where-Object { $_.Name -match "order_design_\d{4,5}-*" }
@@ -126,6 +137,8 @@ for ($i = 0; $i -lt $b.count; $i++) {
         $b[$i] | rename-item -newname { $newName }
     }
 }
+
+deleteBrokenPickSlips
 
 checkLogos
 
