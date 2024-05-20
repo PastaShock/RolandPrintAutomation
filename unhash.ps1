@@ -4,8 +4,11 @@
 # define function to take a filename and rename it/trim off excess text
 function renameRegex($filename) {
     # ^(order_design_\d{5}-)*(\d{6}_[dsx0-9]+)([A-z0-9]+)?(-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?([ ()0-9]+)?(.eps)
-    return $filename.name -replace "^(order_design_\d{4,6}-)*((\d{5,7}|[A-z0-9\-\&'\#~ ]+)_[dsx0-9]+)([A-z0-9\-\&'\#~]+)?(-)?([ ()0-9]+)?(.eps)", '$2$7'
     # return $filename.name -replace "^(?:[A-z_0-9-]+)(\d{6}_[ds]+)( \(\d{1,2}\))?", '$1'
+    # return $filename.name -replace "^(order_design_\d{4,6}-)*((\d{5,7}|[A-z0-9\-\&'\#~ ]+)_[dsx0-9]+)([A-z0-9\-\&'\#~]+)?(-)?([ ()0-9]+)?(.eps)", '$2$7'
+    # New method to accomodate for backprinting logos and to remove legacy file naming conventions:
+    return $filename.name -replace "^(order_design_\d{6}-)*(\d{6,7}_)(([ds]*)|([A-z_ ]+))(\.eps)$", '$2$3$6'
+
 }
 
 # Create a script that cycles through the orders.json and finds all fund IDs and checks if they're here:
