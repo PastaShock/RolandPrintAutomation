@@ -20,3 +20,7 @@ Quick overview of cmdlets
 		-p		[req] [1-4] Argument
 		-r		[opt] flag sends the files to the "C" queue of the selected printer in VersaWorks
 
+## WIP Update
+I have been working off and on while I have time to convert my scripts to work with an API that is self-hosted (could be remote without any issue) track orders and jobs. I am using a postgresql db and a nodejs API @[Node-Postgresql](https://github.com/PastaShock/postgresql-node-boilerplate)
+The goal is to create a frontend that renders orders on pages that look like my job-topsheet and the job-header node applets I made.
+Then a goal of mine was to create a reprint request front end that would log all requests in a way that I could generate a job from them.
