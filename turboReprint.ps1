@@ -44,9 +44,11 @@ Param(
 )
 
 . $scriptsHome\lib.ps1
+. $scriptsHome\lib.ps1
 
 $FolderRange = ($shareDrive + "AA*")
 
+# make get req to db to get order information in global scope:
 # make get req to db to get order information in global scope:
 function LogoFinder($criteria) {
     #placeholder If conditional
@@ -60,6 +62,7 @@ function LogoFinder($criteria) {
         if ($week) {
             # $ORDER = $ORDERS.$criteria | Select-Object -f 1
             # $script = $ORDER.logoScript
+            $fund_id = $ORDER.fundraiser_id
             $fund_id = $ORDER.fundraiser_id
             if ($v) {
                 Write-Host -foregroundcolor Yellow "`$fund_id: $fund_id"
@@ -79,6 +82,8 @@ function LogoFinder($criteria) {
             # Add-LogoUrls $criteria
             write-host "https://snapraiselogos.s3.us-west-1.amazonaws.com/PrinterLogos/$fund_id`_d.png"
             #$searchScript = LogoScriptWildcarder $script
+            # $refind = (get-item $PackingSlip).Directory.FullName
+            $refind = "$shareDrive`AA$week"
             # $refind = (get-item $PackingSlip).Directory.FullName
             $refind = "$shareDrive`AA$week"
             if ($v) {
@@ -133,6 +138,9 @@ function LogoFinder($criteria) {
         #stop-process -Id ($excelProc | sort-object StartTime -descending | select-object -f 1).Id
         #Write-Host "`textra excel processes were stopped."
         #}
+    } else {
+        write-host "order not found in database, check if its a real order on netsuite"
+        write-host "https://4766534.app.netsuite.com/app/accounting/transactions/salesord.nl?id=$id"
     } else {
         write-host "order not found in database, check if its a real order on netsuite"
         write-host "https://4766534.app.netsuite.com/app/accounting/transactions/salesord.nl?id=$id"

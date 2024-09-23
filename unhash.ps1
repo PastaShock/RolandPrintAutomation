@@ -1,49 +1,21 @@
 # script to remove UUID, prepended text and appended text to logo file names.
-# george pastushok 2019-2022
-
-function unUUID($filename) {
-    # find the files that match the UUID pattern
-    $uuidPattern = '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}.eps';
-    $a = get-childitem -include "*.eps" -r
-
-    for ($i = 0; $i -lt $a.count; $i++) {
-        $newName = $a[$i].name.substring(0, $a[$i].BaseName.length - 37) + '.eps'
-        if (Test-Path $newName) {
-            Write-Output "`t deleting file $a[$i].name"
-            Remove-Item $a[$i].name
-        }
-        else {
-            Write-Output "`t renaming file: $newName"
-            $a[$i] | rename-item -newname { $newName }
-        }
-    }
-}
+# george pastushok 2019-2024
 
 # define function to take a filename and rename it/trim off excess text
 function renameRegex($filename) {
     # ^(order_design_\d{5}-)*(\d{6}_[dsx0-9]+)([A-z0-9]+)?(-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?([ ()0-9]+)?(.eps)
-    return $filename.name -replace "^(order_design_\d{4,6}-)*((\d{5,7}|[A-z0-9\-\&'\#~ ]+)_[dsx0-9]+)([A-z0-9\-\&'\#~]+)?(-)?([ ()0-9]+)?(.eps)", '$2$7'
     # return $filename.name -replace "^(?:[A-z_0-9-]+)(\d{6}_[ds]+)( \(\d{1,2}\))?", '$1'
+    # return $filename.name -replace "^(order_design_\d{4,6}-)*((\d{5,7}|[A-z0-9\-\&'\#~ ]+)_[dsx0-9]+)([A-z0-9\-\&'\#~]+)?(-)?([ ()0-9]+)?(.eps)", '$2$7'
+    # New method to accomodate for backprinting logos and to remove legacy file naming conventions:
+    return $filename.name -replace "^(order_design_\d{6}-)*(\d{6,7}_)(([ds]*)|([A-z_ ]+))(\.eps)$", '$2$3$6'
+
 }
-
-# $c = Get-ChildItem | Where-Object { $_.Name -match "\(*\).eps" }
-# for ($i = 0; $i -lt $c.count; $i++) {
-#     $oldName = $c[$i] -split " "
-#     $newName = $oldName[0] + ".eps"
-#     $destination = "$pwd\$newName"
-#     Move-Item $c[$i].Name -Destination $destination -Force
-# }
-
-# the matching regex should look for 
-# ^[order_design_\d{5}-]+(\d{5}_[ds]+)( \(\d{1,2}\))?.eps
-# or:
-# ^(order_design_\d{5}-)*(\d{6}_[dsx0-9]+)([A-z0-9]+)?(-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?([ ()0-9]+)?(.eps)
 
 # Create a script that cycles through the orders.json and finds all fund IDs and checks if they're here:
 function checkLogos() {
     $workingDir = $pwd.path
-    $ordersList = get-content orders.json | convertfrom-json
-    $ordersIndex = @($ordersList | Get-Member | Select-Object -Property 'name')
+    $ordersIndex = get-content orders.json | convertfrom-json
+    # $ordersIndex = @($ordersList | Get-Member | Select-Object -Property 'name')
     for ($i = 4; $i -lt $ordersIndex.length; $i++) {
         $order = $ordersList.$($ordersIndex[$i].name)
         if ($order.digital) {
@@ -73,7 +45,7 @@ function logoDownload($logoname, $workingDir) {
         )
         switch ($RESPONSE) {
             200 {
-                Write-Host "✅ URL is valid, downloading file..." -ForegroundColor "green"
+                Write-Host "`❎ URL is valid, downloading file..." -ForegroundColor "green"
                 downloadFile $URI $logoname $workingDir
             }
             {$_ -ge 400 -and $_ -le 499} {
@@ -84,10 +56,10 @@ function logoDownload($logoname, $workingDir) {
                 Pause
             }
             {$_ -ge 500 -and $_ -le 599} {
-                Write-Host "💣 server error, try again later" -ForegroundColor "red"
+                Write-Host "⚡ server error, try again later" -ForegroundColor "red"
             }
             Default {
-                Write-Host "☠️ something has gone terribly wrong, sorry." -ForegroundColor "red"
+                Write-Host "☠ something has gone terribly wrong, sorry." -ForegroundColor "red"
             }
         }
     }
@@ -98,34 +70,31 @@ function downloadFile($URI,$fileName,$directory) {
     Invoke-WebRequest -URI $URI -OutFile "$directory\$fileName"
 }
 
-$b = Get-ChildItem -include '*.eps' -r; # | Where-Object { $_.Name -match "order_design_\d{4,5}-*" }
+function deleteBrokenPickSlips() {
+    $pickSlipList = Get-ChildItem -include PICK*.pdf -r;
+    $pickSlipList | ForEach-Object {
+        write-host "checking file $($_.name) $($_.length)";
+        if (($_.Length -lt 81000) -and ($_.length -gt 76000)) {
+            write-host "deleting ${$_.fullName} :: invalid filesize : ${$_.length}"
+            remove-item $_.FullName
+        }
+    }
+}
+
+$b = Get-ChildItem -include '*.eps' -r;
 for ($i = 0; $i -lt $b.count; $i++) {
-    # write-output ($b[$i]);
-    # for ($j = 1; $j -lt $b.count; $j++) {
     $newName = renameRegex($b[$i]);
-    # write-output "newName = $newName";
-    # $newName += $oldName[$j];
-    # }
-    #pattern = order_design_{4-6 digits}-{fundId}_{logoSize}_{logoScript}
-    # Test-Path $newname;
-    # $newName -ne $b[$i].name;
     if ($newName -eq "") { return }
     if ((Test-Path $newName) -and ($newName -ne $b[$i].name)) {
-        # Write-Output "`t deleting file $newName`n"
-        # Write-Output "newName: $newName"
-        # Write-Output "b[i]: $b[$i].name"
-        # Write-Host -NoNewLine 'Press any key to continue...';
-        # $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
         Remove-Item $b[$i]
     }
     else {
         if ($newName -eq $b[$i]) { return }
-        # Write-Output "`t renaming file: $newName"
-        # Write-Host -NoNewLine 'Press any key to continue...';
-        # $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
         $b[$i] | rename-item -newname { $newName }
     }
 }
+
+deleteBrokenPickSlips
 
 checkLogos
 
@@ -134,8 +103,3 @@ move-item "*.png" "$ShareDrive`embroidery\PNGs\" -force
 
 Remove-Item "*(*).pdf"
 Remove-Item "*(*).json"
-#get-childitem -include '*.eps' -r | rename-item -newname {$_.Name -replace "_20" , ""}
-#get-childitem -include '*.eps' -r | rename-item -newname {$_.Name -replace "_7C" , ""}
-#get-childitem -include '*.eps' -r | rename-item -newname {$_.Name -replace "26" , ""}
-#get-childitem -include '*.eps' -r | rename-item -newname {$_.Name -replace "_" , ""}
-

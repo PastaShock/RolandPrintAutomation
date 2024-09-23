@@ -24,6 +24,8 @@ $rep = Get-Content reprints.csv | ConvertFrom-Csv
 # copy the print job header to the queue
 Copy-Item $shareDrive\press-reprints.eps $queue
 Copy-Item $shareDrive\weeding-masking-reprints.eps $queue
+Copy-Item $shareDrive\press-reprints.eps $queue
+Copy-Item $shareDrive\weeding-masking-reprints.eps $queue
 
 #main loop
 foreach ($req in $rep) {
