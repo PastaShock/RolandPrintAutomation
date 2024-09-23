@@ -77,7 +77,7 @@ function logoDownload($logoname, $workingDir) {
                 downloadFile $URI $logoname $workingDir
             }
             {$_ -ge 400 -and $_ -le 499} {
-                Write-Host "`n🤦file doesn't exist, submit ticket to Art Team" -ForegroundColor "red"
+                Write-Host "🤦file doesn't exist, submit ticket to Art Team" -ForegroundColor "red"
                 Write-Host "url`t     : https://4766534.app.netsuite.com/app/accounting/transactions/salesord.nl?id=$($order.orderId)" -NoNewline
                 $order | Format-List
                 Write-Host "S3url`t     : $URI`n"

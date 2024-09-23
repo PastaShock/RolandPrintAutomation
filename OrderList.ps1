@@ -1,46 +1,50 @@
 #Aliased to yeet
 #use options to direct how the files are treated
 #
-#FOR NETSUITE; VERSION 2
+#FOR NETSUITE; FOR SERVER; VERSION 3 -- In Progress
+# =====================================================================================
+# ======_|\___||____||==\\__||==\\____//\\_____//\\___||==\\__||====__/====\___/====\__
+# __||___| \__||____||___\\_||___\\__//__\\___//__\\__||___\\_||_____||___||__||___||__
+# __||___||\\_||____||___//_||___//_//____\\_//_______||___//_||_____||_______||_______
+# __||___||_\\||____||==//__||==//__\\____//_\\__====_||==//__||====__\====\___\====\__
+# __||___||__\ |____||______||__\\___\\__//___\\__//__||__\\__||_____--____||_--____||_
+# ======_||___\|____||______||___\\___\\//_____\\//___||___\\_||====_\=====/__\=====/__
+# =====================================================================================
 
 [cmdletBinding()]
     param(
 #   _____________
-        #Printer \___________________________________________
-        #-p :Select a printer: Moves files to the requested directory
-        # SElect a printer to sent the files to, Default to q A
+    #    Printer \___________________________________________
+    #    -p :Select a printer: Moves files to the requested directory
+        # Select a printer to sent the files to, Default to q A
         [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
         [Alias("p")]
         [ValidateRange(1,4)]
         [int] $Printer,
-#   _____________
-        #OTF     \___________________________________________
-        # -o : OTF orders : Moves files to the OTF directory
-        # Should be used in conjunction with -p but should still copy_
-        # the files to q A while moving the files to the OTF dir
+#   ___________
+    #    Queue \___________________________________________
+        # -q :Select a printer: Moves files to the requested directory
+        # Select a printer to sent the files to, Default to q A
         [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
-        [switch] $o,
+        [Alias("q")]
+        [ValidateRange("a","e")]
+        [string] $queue,
 #   _____________
-        #ROLANDA \___________________________________________
-        # -x : orders printed on rolanda : Moves files to the Rolanda dir
-        [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
-        [switch] $x,
-#   _____________
-        #Reorder \___________________________________________
-        # -d : Reorder/redeux : moves orders to the reorder directory
-        # Should be used in conjunction with -p but should still copy_
-        # the files to q A while moving the files to the reorder dir
-        [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
-        [Switch] $d,
-#   _____________
-        #JobGuid \___________________________________________
-        # -jobId : orders printed on rolanda : Moves files to the Rolanda dir
+#        JobGuid \___________________________________________
+#        -jobId : Pass the job ID into this script; should be newly created.
         [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
         [String[]] $jobId
     )
 
 clear-content -path $printlist;
+write-host "cleared printlist"
 
+# set the queue to default if it is blank
+if ($queue) {
+    write-host "queue is : $queue"
+} else {
+    $queue = "a"
+}
 # Create the names for the folders for the day.
 $date = get-date # -Format "MMdd"
 $ROOTDIR = split-path $PWD
@@ -50,13 +54,13 @@ $dir = get-location;
 #write-output "dir: $dir"
 # get the orders.json into a usable format
     # get the orders.json into a POSH object
-$orders = get-childitem -path $dir\\* -include 'orders.json' -r
-$orders = get-content $orders | convertfrom-json
+$ordersJsonPath = get-childitem -path $dir\\* -include 'orders.json' -r
+$ordersJson = get-content $ordersJsonPath | convertfrom-json
 # create an empty array to fill
 # write the array to the console
 # displayed as:
 # orders: @{6494728=; 6691294=; 6691295=; 6691296=; 6691297=; 6691501=; 6691587=}
-write-output "orders: $orders"
+write-output "orders: $($ordersJson.order_id)"
 
 # create a guid for the job ID, here to add to the database as soon as possible
 #       80dd9be5-7d9c-4a00-af8d-26eb539099db
@@ -68,31 +72,66 @@ if (!$jobId) {
 # declare / initialize empty array for building a table of the orders:
 $ordersToTable = @()
 
-# Set $list to members of $orders
-$list = $orders | Get-Member
-# get all the the 'names' of the objects
-$list = ($list | select-object -property 'Name')
-
 # loop through all the order IDs in the $list
-for ($i = 4; $i -lt $list.length; $i++) {
-    if ($orders) {
-        $j = $list[$i] | Select-Object -ExpandProperty 'Name'
-        #write-output "j: $j"
-        $ORDERID = $orders.$j | select-object -expandproperty 'orderId'
-        #write-output "order id: $ORDERID"
-        # $ORDERTYPE = $orders.$j | select-object -expandproperty 'orderType'
-        # write-output "order type: $ORDERTYPE"
-        # $SALESORDERID = $orders.$j | Select-Object -ExpandProperty 'salesOrder'
-        $CURRENTORDER = $orders.$j
-        $CURRENTORDER.printDate = (Get-Date -Format "ddd MMM dd yyyy HH:mm:ss G\MTK") + " (Pacific Daylight Time)"
+# At the end post the Order, Job and Job_Order pair to the DB.
+for ($i = 0; $i -lt $ordersJson.length; $i++) {
+    if ($ordersJson) {
+        $ORDERID = $ordersJson[$i].order_id
+        # write-output "order id: $ORDERID"
+        $CURRENTORDER = $ordersJson[$i]
         # add property with value username
-        $CURRENTORDER | Add-Member -MemberType noteProperty -Name printUser -value $env:USERNAME
-        $CURRENTORDER | Add-Member -MemberType noteProperty -Name jobId -value "$jobId"
-        $FUNDID = $orders.$j | select-object -expandproperty 'fundId'
-        #write-output "fund id: $FUNDID"
+        $FUNDID = $CURRENTORDER.fundraiser_id
+        # write-output "fund id: $FUNDID"
         # add the placed date of the order to the $ORDERSDATERANGE array:
         # $ORDERSDATERANGE += $CURRENTORDER.placedDate
         add-content -path $printlist -value $ORDERID
+        # write-host "added $ORDERID to printlist"
+        # add the current iterated order to the database
+        # Post to orders table:
+        # $names = ($orders | Select-Object -f 1 | get-member -type noteProperty | Select-Object -property Name)
+        # Write-Output $names.length
+        $body = @{
+          order_id = $CURRENTORDER.order_id
+          sales_order_id = $CURRENTORDER.sales_order_id
+          magento_id = $CURRENTORDER.magento_id
+          fundraiser_id = $CURRENTORDER.fundraiser_id
+          fundraiser_name = $CURRENTORDER.fundraiser_name
+          placed_on_date = $CURRENTORDER.placed_on_date
+        #   placed_on_date = $(Get-Date ($CURRENTORDER.placed_on_date)).datetime
+          date_downloaded = $CURRENTORDER.date_downloaded
+        #   date_downloaded = (Get-Date $($CURRENTORDER.date_downloaded.split(' ')[0,1,2,3,4] -Join ' ')).datetime
+          date_printed = $null
+          order_type = $CURRENTORDER.order_type
+          order_notes = $CURRENTORDER.order_notes
+          logo_script = $CURRENTORDER.logo_script
+          logo_id = $CURRENTORDER.logo_id
+          primary_color = $CURRENTORDER.primary_color
+          secondary_color = $CURRENTORDER.secondary_color
+          logo_count_digital = $CURRENTORDER.logo_count_digital
+          logo_count_digital_small = $CURRENTORDER.logo_count_digital_small
+          logo_count_sticker = $CURRENTORDER.logo_count_sticker
+          logo_count_embroidery = $CURRENTORDER.logo_count_embroidery
+          print_user_name = $user
+          print_job_id = $jobId[0]
+          print_device = $Printer
+        } | convertto-Json
+        if ($NULL -ne $body) {
+            # Write-Output "order Body:`n$body"
+            Invoke-RestMethod -Method POST -Uri "$db_uri/orders" -body $body -contentType "application/json" | Out-Null
+        } else {
+            Write-Output "body is null"
+        }
+        # Post to job_orders API endpoint:
+        $body = @{
+          job_id = $jobId[0]
+          order_id = $CURRENTORDER.order_id
+        } | ConvertTo-Json
+        if ($NULL -ne $body) {
+            # Write-Output "job_order Body:`n$body"
+            Invoke-RestMethod -Method POST -Uri "$db_uri/job_orders" -Body $body -ContentType "application/json" | Out-Null
+        } else {
+            Write-Output "body is null"
+        }
         # The following cases can be made to move/sort the orders in the file system automatically like so:
         # switch $orderType
             # [case] OTF:
@@ -103,44 +142,28 @@ for ($i = 4; $i -lt $list.length; $i++) {
         # [case] normal order
         if ($Printer -lt 1 -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
             #Moving files up one directory to the folder for the current week.
-            Write-Host  -foregroundcolor yellow "no options selected: moving orders up one level."
+            # Write-Host  -foregroundcolor yellow "no options selected: moving orders up one level."
             # copy-item "*$FUNDID*.eps" .. -Force;
             # copy-item "*$ORDERID*.pdf" .. -Force;
             move-item "*$FUNDID*.eps" .. -Force;
             move-item "*$ORDERID*.pdf" .. -Force;
             #remove-item *;
         }
-        #[case] OTF
-        if ($Printer -ne $true -and $o -eq $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
-            Write-Host  -foregroundcolor yellow "option OTF selected: moving to ../OTF";
-            #move files ot the OTF directory
-            move-item "*$FUNDID*.eps" ..\otf -Force;
-            move-item "*$ORDERID*.pdf" ..\otf -Force;
-        }
-        #[case] Reorder
-        if ($Printer -ne $true -and $o -ne $true -and $roll -ne $true -and $d -eq $true -and $x -ne $true) {
-            Write-Host  -foregroundcolor yellow "option reorder selected: moving to ../reorder";
-            #move files ot the OTF directory
-            move-item "*$FUNDID*.eps" ..\Reorder -Force;
-            move-item "*$ORDERID*.pdf" ..\Reorder -Force;
-        }
         #[case] Rolanda
         if ($Printer -ne $true -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -eq $true) {
             write-host -foregroundcolor yellow 'sending files to \Rolanda'
             #moves files to the Reorder dir
-            move-item "*$FUNDID*.eps" ..\Rolanda;
-            move-item "*$ORDERID*.pdf" ..\Rolanda;
+            # move-item "*$FUNDID*.eps" ..\Rolanda;
+            # move-item "*$ORDERID*.pdf" ..\Rolanda;
         }
         # [case] Roll
         if ($Printer -and $o -ne $true -and $roll -ne $true -and $d -ne $true -and $x -ne $true) {
             # moves files to Rolanda dir
-            $DESTINATION = "$ROOTDIR\$rollfile$Printer"
+            $DESTINATION = "$ROOTDIR\"
             # $DESTINATION
-            # copy-item "$FUNDID*.eps" $DESTINATION -Force;
-            # copy-item "*$ORDERID.pdf" $DESTINATION -Force;
-            move-item "$FUNDID*.eps" $DESTINATION -Force;
-            move-item "*$ORDERID.pdf" $DESTINATION -Force;
-            write-host -foregroundcolor yellow "option roll selected: moving orders to $DESTINATION"
+            # move-item "$FUNDID*.eps" $DESTINATION -Force;
+            # move-item "*$ORDERID.pdf" $DESTINATION -Force;
+            # write-host -foregroundcolor yellow "option roll selected: moving orders to $DESTINATION"
         }
         # Add the current order's data set to the table array:
         $ordersToTable += $CURRENTORDER
@@ -150,16 +173,33 @@ for ($i = 4; $i -lt $list.length; $i++) {
 if ((test-path temp.csv) -eq $false) {
     New-Item temp.csv
 }
-$table = $ordersToTable | Select-Object orderId,fundId,placedDate,fundName,jobId;
-$table | Format-Table -AutoSize;
+$table = $ordersToTable | Select-Object order_id,fundraiser_id,placed_on_date,fundraiser_name,job_id;
+# $table | Format-Table -AutoSize;
 $table | Export-Csv temp.csv -NoTypeInformation;
 # Start-Process temp.csv -verb print;
 
 $Global:jobId = $jobId
-$toAdd = @()
-$toAdd += get-content $DATABASE | convertfrom-json
-$toAdd += $orders
-set-content -path $DATABASE -value ($toAdd | convertto-json)
+$body = @{
+    job_id = $jobId[0]
+    date_downloaded = $ordersJson[0].date_downloaded
+    date_printed = "$(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ')"
+    print_user = $user_id
+    print_device = $Printer
+    print_queue = $queue
+} | ConvertTo-Json
+# Write-Output "job Body:`n$body"
+Invoke-RestMethod -Method Post -Uri "$db_uri/jobs/" -body $body -ContentType "application/json" | Out-Null
+#   JOB_ORDERS: [
+#       {
+#         order_id: ID,
+#         job_id: UUID
+#       }
+# ]
+# $toAdd = @()
+# $toAdd += get-content $DATABASE | convertfrom-json
+# $toAdd += $orders
+# set-content -path $DATABASE -value ($toAdd | convertto-json)
+Write-Output "set content database"
 
 # if ($Printer) {
 #     # moves files to requested printer directory

@@ -43,24 +43,24 @@ Param(
     [switch] $v
 )
 
-. "$scriptsHome\lib.ps1"
-
+. $scriptsHome\lib.ps1
 
 $FolderRange = ($shareDrive + "AA*")
 
-
+# make get req to db to get order information in global scope:
 function LogoFinder($criteria) {
     #placeholder If conditional
-    if ($null -ne $criteria) {
+    if ($criteria.statusCode -eq 200) {
+        $ORDER = $criteria.content | convertfrom-JSON
         #find all ordersIds that match search criteria
-        $PackingSlip = OrderFinder $criteria $false
-        if ($v) {
-            Write-Host -ForegroundColor Yellow "`$PackingSlip: $PackingSlip"
-        }
-        if ($null -ne $PackingSlip) {
-            $ORDER = $ORDERS.$criteria | Select-Object -f 1
+        # $PackingSlip = OrderFinder $criteria $false
+        $estFileLocation = [DateTime]($ORDER.date_printed | get-date)
+        $week = $estFileLocation.AddDays([DayOfWeek]::Monday - [int]$estFileLocation.DayOfWeek)
+        $week = '{0:yyMMdd}' -f $week
+        if ($week) {
+            # $ORDER = $ORDERS.$criteria | Select-Object -f 1
             # $script = $ORDER.logoScript
-            $fund_id = $ORDER.fundid
+            $fund_id = $ORDER.fundraiser_id
             if ($v) {
                 Write-Host -foregroundcolor Yellow "`$fund_id: $fund_id"
             }
@@ -75,11 +75,12 @@ function LogoFinder($criteria) {
             # write-host -foregroundcolor $color "$script"
             # write-host "`tPlaced On:`t" -nonewline
             # write-host -foregroundcolor $color "$placedOn"
-            write-host "URL          : " -NoNewline
-            write-host "https://4766534.app.netsuite.com/app/accounting/transactions/salesord.nl?id=$ID&whence"
             Write-Output $ORDER
+            # Add-LogoUrls $criteria
+            write-host "https://snapraiselogos.s3.us-west-1.amazonaws.com/PrinterLogos/$fund_id`_d.png"
             #$searchScript = LogoScriptWildcarder $script
-            $refind = (get-item $PackingSlip).Directory.FullName
+            # $refind = (get-item $PackingSlip).Directory.FullName
+            $refind = "$shareDrive`AA$week"
             if ($v) {
                 Write-Host -ForegroundColor Yellow "`$refind: $refind"
             }
@@ -89,8 +90,10 @@ function LogoFinder($criteria) {
                 Write-Host -ForegroundColor Yellow "`$logoSearch: $logoSearch"
             }
             #trim line endings and leading and or trailing zeroes.
-            write-host -foregroundcolor $conColor "`tOrder "$criteria" is located at: "($refind.trim("\`n"))""
+            write-host -foregroundcolor $conColor "`tOrder "$ORDER.order_id" is located at: "($refind.trim("\`n"))""
             $logoFile = $logoSearch | Select-Object -f 1
+            # $logoFile = $logoFile -replace ' ', '` '
+            Add-LogoUrls $criteria
             if ($v) {
                 write-host -ForegroundColor Yellow "`$logoFile: $logoFile`n`$logoFile.fullname: $($logoFile.FullName)"
             }
@@ -100,11 +103,11 @@ function LogoFinder($criteria) {
             }
             else {
                 $logoFile = $logoFile.FullName
-                explorer /select,$logoFile
+                explorer "/select,$logoFile"
             }
         }
         else {
-            write-host "`tsearch for $criteria returned nothing"
+            write-host "`tsearch for "$ORDER.order_id" returned nothing"
             Write-Host "`topening order in Chrome..."
             chrome "https://4766534.app.netsuite.com/app/accounting/transactions/salesord.nl?id=$ID&whence="
             #chrome "https://www.snap-raise.com/orders/$ID/process"
@@ -130,6 +133,9 @@ function LogoFinder($criteria) {
         #stop-process -Id ($excelProc | sort-object StartTime -descending | select-object -f 1).Id
         #Write-Host "`textra excel processes were stopped."
         #}
+    } else {
+        write-host "order not found in database, check if its a real order on netsuite"
+        write-host "https://4766534.app.netsuite.com/app/accounting/transactions/salesord.nl?id=$id"
     }
 }
 
@@ -170,7 +176,7 @@ function SearchForLogoByScript {
         Write-Host -foregroundcolor Red "Logo was not found, try again."
     }
     else {
-        explorer /select,$rval
+        explorer "/select,$rval"
     }
 }
 function ShopLogoByScript($dir) {
@@ -212,10 +218,15 @@ function ShopLogoByScript($dir) {
 } #>
 
 if ($ID -gt $null -And -not $history -And -not $OrderForm -and -not $status) {
+    $lookupUrl = "$db_uri/orders/$ID"
+    $response = Get-Response $lookupUrl
+    Add-LogoUrls $response
     #write-output "`tlogo search based on ID`n`n"
-    LogoFinder($ID)
+    LogoFinder($response)
 }
 elseif ($OrderForm -And $ID) {
+    $lookupUrl = "$db_uri/orders/$ID"
+    $response = Get-Response $lookupUrl
     #write-output "`torder form search`n"
     OrderFinder $ID $true
 }
@@ -226,6 +237,8 @@ elseif ($Shop) {
     ShopLogoByScript 'D:\Snap$hop'
 }
 elseif ($history -and $ID) {
+    $lookupUrl = "$db_uri/orders/$ID"
+    $response = Get-Response $lookupUrl
     $folderRange = "$shareDrive"
     LogoFinder($ID)
     if ($OrderForm) { OrderFinder $ID $true }
@@ -246,7 +259,7 @@ elseif ($share) {
 }
 else {
     $ID = Read-Host -prompt "`n`tPlease enter an Order ID to find logos for"
-    $check = $ID -match "^\d{5}$"
+    $check = $ID -match "^\d{5-8}$"
     if ($check -eq $true) {
         LogoFinder $ID
 

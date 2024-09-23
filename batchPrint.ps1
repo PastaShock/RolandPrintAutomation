@@ -38,23 +38,31 @@ function jobHeaderGen($q) {
     # make sure that all variables are accounted for; arrays for printers, queues, users, dates etc
     #   - get placed dates from orders.json of all orders
     $date = @(); # init array for storage of dates of all orders
-    $ordersToTable = @() # Create/initialize an array for reformating orders.json
+    # $ordersToTable = @() # Create/initialize an array for reformating orders.json
 
     $ORDERSJSON = (Get-Content .\orders.json | convertfrom-json);
-    $ORDERSDATABASE = get-content $DATABASE | convertfrom-json
-    $ORDERLIST = ($ORDERSJSON | get-member);
-    $ORDERLIST = ($ORDERLIST | Select-Object -property 'Name');
+    # change all references to old DB to api call
+    # $ORDERSDATABASE = get-content $DATABASE | convertfrom-json
+    $ORDERLIST = Get-Content $printlist;
+    # $ORDERLIST = ($ORDERLIST | Select-Object -property 'Name');
     
-    for ($i = 4; $i -lt $ORDERLIST.length; $i++) {
-        $ORDER = $ORDERLIST[$i] | Select-Object -expand 'Name';
-        # $ORDERID = ($ORDERSJSON.$ORDER | Select-Object -expand 'orderId');
-        $CURRENTORDER = $ORDERSJSON.$ORDER;
-        $date += $CURRENTORDER.placedDate;
-        $orderType = $CURRENTORDER.orderType;
-        $jobId = ($ORDERSDATABASE.$ORDER).JobId;
-        $ordersToTable += $CURRENTORDER;
+    for ($i = 0; $i -lt $ORDERLIST.length; $i++) {
+        $ORDER = $ORDERSJSON | Where-Object -Property 'order_id' -eq $ORDERLIST[$i];
+        $ORDERID = $ORDER.order_id;
+        $date += $ORDER.placed_on_date;
+        $orderType = $ORDER.order_type;
+        $jobId = (Invoke-RestMethod -Method GET -Uri "$db_uri/orders/$ORDERID").Job_id;
+        # $ordersToTable += $CURRENTORDER;
         $Global:jobId = $jobId;
     };
+
+    # PUT jobs table with this job id and updated printer and queue
+    $body = @{
+        print_device = $desiredPrinter
+        print_queue = $q
+    } | ConvertTo-Json
+    Invoke-RestMethod -Method PUT -Uri "$db_uri/jobs/$jobId" -body $body -ContentType "application/json" | Out-Null
+
     # take the first and last item from the array and put them in a new array.
     $dateConcat = ($date | Select-Object -f 1), ($date | Select-Object -l 1);
     $dateConcat = $dateConcat -join ' - ';
@@ -91,18 +99,18 @@ function jobHeaderGen($q) {
     };
 
     # orderstotable should now be full of all the orders and ready to convert to JSON
-    $table = $ordersToTable | Select-Object orderId,salesOrder,fundId,fundName,placedDate,logoScript,priColor,secColor,logoId,digital,digiSmall;
-    $JSONpayload = $table | ConvertTo-Json
+    # $table = $ordersToTable | Select-Object orderId,salesOrder,fundId,fundName,placedDate,logoScript,priColor,secColor,logoId,digital,digiSmall;
+    # $JSONpayload = $table | ConvertTo-Json
     # I am writing the JSON to a file because I could not get it to cooperate as just a string passed as a variable/object into node
-    Set-Content "C:\ps\job-top-sheet\temp.json" $JSONpayload
+    Set-Content "C:\ps\job-top-sheet\temp.json" (Get-Content .\orders.json)
 
     # call the following node.js applets: job-header-gen and job-top-sheet
     node 'C:\ps\job-top-sheet\app.js' --jobId="$jobId" --datePlaced="$dateConcat" --dateCurrent="$currDate" --user="$user" --printer="$PRINTDEVICE[$PRINTQUEUE]" --orderType="$orderType" --priority="$priority"
-    node 'C:\ps\label_temp - Copy\app.js' --jobId="$jobId" --datePlaced="$dateConcat" --dateCurrent="$currDate" --user="$user" --printer="$PRINTDEVICE[$PRINTQUEUE]" --orderType="$orderType" --priority="$priority"
-    Move-Item "C:\ps\job-top-sheet\$Global:jobId-top-sheet.pdf" ..
+    node 'C:\ps\job-header-gen\app.js' --jobId="$jobId" --datePlaced="$dateConcat" --dateCurrent="$currDate" --user="$user" --printer="$PRINTDEVICE[$PRINTQUEUE]" --orderType="$orderType" --priority="$priority"
+    Move-Item "C:\ps\job-top-sheet\$Global:jobId-top-sheet.pdf" .. -Force
     Start-Process "..\$Global:jobId-top-sheet.pdf" -verb print
     # copy the file to the print queue:
-    $headerPath = "C:\ps\label_temp - Copy\$jobId.pdf"
+    $headerPath = "C:\ps\job-header-gen\$jobId.pdf"
     while ((test-path $headerPath) -ne $true) {
         Write-Host "$headerPath not available yet, pausing for 1 second..."
         Start-Sleep 1;
@@ -151,7 +159,7 @@ if (!($verbosity)) {
         $true { $jobDestination += "r$folderDate\" }
         Default {}
     }
-    Move-Item "C:\ps\label_temp - Copy\$Global:jobId.pdf" $jobDestination
+    Move-Item "C:\ps\job-header-gen\$Global:jobId.pdf" $jobDestination
     notepad $jobDestination\$Global:jobId.json
 
 }
