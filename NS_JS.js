@@ -1,5 +1,7 @@
 //George Pastushok 2024
-//  -Updated March 2024
+// Updated August 2024:
+//    Added emojis for better visibility on new fields Marco, Custom and Template
+//    Shortened header titles for those columns. 
 
 //create a js file thatis created when the user selects orders and clicks the create package button. The button runs a function that checks for currently selected orders, gets their information, puts it into an object and creates a downloadable file with it.
 //following variable declarations are order specific data
@@ -20,11 +22,13 @@ var eight = 0
 var six = 0
 var five = 0
 var four = 0
-var COUNTELEVEN = []
+var COUNTELEVEN = {}
 var ORDERS_SELECTED = {}
 var PASTSELECTION = 0
-var storeDesignDetailsColumnShift = 20        
-var storeDDS= [];
+var storeDesignDetailsColumnShift = 20
+if (storeDDS === undefined) {
+    var storeDDS = [];
+};
 //var COUNTSELECTEDLOGOS = ""
 //next variables are increments
 var i //for incrementing at the order level on the main page.
@@ -43,7 +47,7 @@ orderRow = document.getElementsByClassName('uir-list-row-tr')
 //  order column
 orderCol = 'td'
 constCheck = 'order-toggle'
-verbBool = false;
+verbBool = true;
 snapStore = 'Snap!Store Customer'
 
 //setting up for the script
@@ -61,7 +65,8 @@ function getColumnNames() {
     headerRow = document.getElementsByClassName('uir-list-header-td')
     for (h = 0; h < headerRow.length; h++) {
         for (column in COLUMNS) {
-            if (headerRow[h].innerText.trim() == COLUMNS[column].name) {
+            currCol = headerRow[h].innerText
+            if (currCol.trim() == COLUMNS[column].name) {
                 COLUMNS[column].column = h;
             }
         }
@@ -84,8 +89,12 @@ function init() {
         "COLDF": { "column": "", "name": "DESIGNS" },                 //DESIGNS - qty of logo sizes
         "COLLU": { "column": "", "name": "LOGO URLS" },               //LOGO URLS - urls strings of the logo location
         "COLDL": { "column": "", "name": "ALL DESIGNS & SLIPS" },     //ALL DESIGNS AND SLIPS
-        "COLSO": { "column": "", "name": "REFERENCE #" }              //SALES ORDER ID NUMBER - for matching shipments
+        "COLSO": { "column": "", "name": "REFERENCE #" },             //SALES ORDER ID NUMBER - for matching shipments
+        "COLCP": { "column": "", "name": "CUSTOM PRINTING", "short": "CSTM" },          // Backprinting flag
+        "COLMI": { "column": "", "name": "HAS MARCO ITEM", "short": "MARCO" },           // Partially outsourced order
+        "COLPT": { "column": "", "name": "PRODUCT TEMPLATE", "short": "TMPLT" }          // Seasonal event/promotional logo treatment
     }
+    customColumns = [COLUMNS.COLCP, COLUMNS.COLMI, COLUMNS.COLPT]
     getColumnNames()
     for (o = 0; o < (x); o++) {
         toggle = createToggle(o)
@@ -94,16 +103,31 @@ function init() {
             orderRow[o].getElementsByTagName(orderCol)[0].appendChild(createOnClick(o))
             //setTimeout(console.log('setTimeout(100ms)'), 100)
         }
+    renameHeaders(o)
+    changeToCheckEmoji(o)
     }
+    // object containing all elements in the Header of the table:
+    headerRow = document.getElementsByClassName('uir-list-headerrow noprint')[0].getElementsByTagName('td')
+    // for (header in headerRow) {
+        // headerText = () => { try { return headerRow[col].innerText } catch { return headerRow[col] }; };
+        // console.log(`col: ${col} :: header: ${headerText()}`)
+        // col += 1;
+    // }
     // On a row by row basis information is pulled
     // x is the number of rows on the page.
     for (let j = 0; j < x; j++) {
         verbosity(`init()`,`30`,`\t--------------------row ${j}--------------------`)
         storeDDS[j] = 0;
-        if (orderRow[j].getElementsByTagName(orderCol)[31] === undefined) {
+        if (orderRow[j].getElementsByTagName(orderCol)[headerRow.length - 1] === undefined) {
             storeDDS[j] = 0;
-            if (orderRow[j].getElementsByTagName(orderCol)[30] === undefined) {
-                storeDDS[j] += 1;
+            verbosity(`init()`, `30`, `missing columns (storeDDS[j]):${storeDDS[j]}`)
+            if (orderRow[j].getElementsByTagName(orderCol)[headerRow.length - 2] === undefined) {
+                storeDDS[j] += 0;
+                verbosity(`init()`, `30`, `missing columns (storeDDS[j]):${storeDDS[j]}`)
+                if (orderRow[j].getElementsByTagName(orderCol)[headerRow.length - 3] === undefined) {
+                    storeDDS[j] += 1;
+                    verbosity(`init()`, `30`, `missing columns (storeDDS[j]):${storeDDS[j]}`)
+                }
             }
         }
         verbosity('init()','31','getting number of logo sizes per order ...')
@@ -154,12 +178,13 @@ function init() {
         if (currentFundName == snapStore) {
             // pull the fund Id from the Logo URLs column if it is not an empty cell with an NBSP
             // set cell contents to variable to clean up following code:
+                verbosity(`init()`,`79`,`CellLogoURLs: ${orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column - storeDDS[j]].innerHTML}`)
             let CellLogoURLs = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLLU.column]
+                verbosity(`init()`,`80`,`storeDDS[j]: ${storeDDS[j]}`)
             let CellDDStore = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column - storeDDS[j]]
             if ( ( CellLogoURLs.innerText === '\xa0') && ( CellDDStore.innerText !== '\xa0') ) {
                 verbosity(`init()`,`81`,`store order: ${order_id} ----------`)
-                let storeFundId = CellDDStore.getElementsByTagName('a')[0].getAttribute('onclick').split('/')[4].split('_')[0]
-                // storeFundId = storeFundId[storeFundId.length - 1].split('.')[0].split('_')[0];
+                var storeFundId = CellDDStore.getElementsByTagName('a')[0].getAttribute('onclick').split('/')[4].split('_')[0]
                 if (storeFundId !== "Download") {
                     // print the fundraiser_id in the Fund ID column
                     verbosity(`init()`,`86`,`order FundId is not 'Download': ${storeFundId}`)
@@ -172,7 +197,28 @@ function init() {
 
             // This section is to grab the URL from the onclick function in the first link in the DD(s) cell
             // split by first the / and then secondly the _ should leave us with ['123456', '.eps'] or ['123456', 'v2','.eps'] if the link is to a v2 logo
-            let storeS3LinkFileName = CellDDStore.getElementsByTagName('a')[0].getAttribute('onclick').split('\'')[1].split('/')[4].split('_')
+            // test content of DOM with regex to ensure correct data is passed through:
+            let dom_elements = CellDDStore.getElementsByTagName('a')
+            fundId_regex = /\d{5,6}/;
+            let storeS3LinkFileName = '';
+            for (let k = 0; k < dom_elements.length; k++) {
+                try {
+                    if (fundId_regex.test(dom_elements[k].getAttribute('onclick').split('\'')[1].split('/')[4].split('_')[0])) {
+                        storeS3LinkFileName = dom_elements[k].getAttribute('onclick').split('\'')[1].split('/')[4].split('_')
+                        console.log(`storeS3LinkFileName found ${storeS3LinkFileName[0]} as the fund ID matching \d{5,6} format`)
+                    }
+                }
+                catch(err) {
+                    console.log(`found invalid download URL, check if logos are uploaded correctly\nERROR: ${err}`)
+                }
+                if (storeS3LinkFileName === '') {
+                    storeS3LinkFileName = [storeFundId, '']
+                    console.log(`setting storeS3LinkFileName with standard method, or fundID is text`)
+
+                } else {
+                    console.log(`storeS3LinkFileName is not empty string: type:${typeof storeS3LinkFileName} value:${storeS3LinkFileName}`)
+                }
+            }
             // let storeS3LinkFileName = ['123456', '']
             verbosity(`init()`,`103`,`storeS3LinkFileName : ${storeS3LinkFileName}`)
             verbosity(`init()`,`104`,`CellDDStore.getElementsByTagName('a')[0] : ${CellDDStore.getElementsByTagName('a')[0]}`)
@@ -191,14 +237,21 @@ function init() {
     }
     checkStoreURLs();
     // document.getElementById('customtxt').setAttribute('onclick','if (NS.form.isInited() && NS.form.isValid()) ShowTab("custom",false); return false; createLogoPreviews();')
+    console.log(`storeDDS: ${JSON.stringify(storeDDS)}`)
 }
 
 function getHREF(d) {
+    // define the number of headers for each column in the table
+    headerRow = document.getElementsByClassName('uir-list-headerrow noprint')[0].getElementsByTagName('td')
+    // define the number of cells in the row
+    verbosity(`getHREF()`,`2`,`orderDLRow: ${orderRow[d].getElementsByTagName(orderCol)}`)
     orderDLrow = orderRow[d].getElementsByTagName(orderCol);
-    if ( orderDLrow[30] !== undefined ) {
+    if ( (headerRow.length - 1) === orderDLrow.length ) {
         gotHREF = orderDLrow[COLUMNS.COLDL.column].getElementsByTagName('a')[0].getAttribute('onclick')
-    } else {
-        gotHREF = orderDLrow[COLUMNS.COLDL.column-2].getElementsByTagName('a')[0].getAttribute('onclick')
+        verbosity(`getHREF()`, `4`, `set download link successfully: ${gotHREF}`)
+    } else if ( (headerRow.length - 2) === orderDLrow.length ) {
+        gotHREF = orderDLrow[COLUMNS.COLDL.column - 1].getElementsByTagName('a')[0].getAttribute('onclick')
+        verbosity(`getHREF()`, `4`, `set download link successfully: ${gotHREF}`)
     }
     return gotHREF
 }
@@ -222,6 +275,35 @@ function createOnClick(ti) {
     toggleHREF.textContent = 'download'
     verbosity(`createOnClick()`,`5`,`created onClick function in download button`);
     return toggleHREF
+}
+
+function changeToCheckEmoji(row) {
+    // custom, marco and template should be emojis instead of TRUE/FALSE
+    var customColumns = [COLUMNS.COLCP, COLUMNS.COLMI, COLUMNS.COLPT]
+    customColumns.forEach(col => {
+        let orderRowColumnSelector = orderRow[row].getElementsByTagName(orderCol)[col.column]
+        let bool = orderRowColumnSelector.innerText === 'TRUE'
+        if (bool) {
+            orderRowColumnSelector.innerText = "✅"
+        } else {
+            orderRowColumnSelector.innerText = "❌"
+        }
+    })
+}
+
+function renameHeaders(row) {
+    // Get the column name and compare it to the customColumns obj
+    // IF the column name matches, them we want to rename it to the short property of that object.
+    for (const [obj, prop] of Object.entries(customColumns)) {
+        for (const [key, value] of Object.entries(prop)) {
+            if (key === 'short') {
+                headerRow[prop.column].innerText = prop.short;
+                // headerRow[prop.column].setAttribute("style", "width: 50px;")
+                orderRow[row].getElementsByTagName(orderCol)[prop.column].setAttribute("style", "width: 50px; font-size: 30px")
+            }
+            console.log(`${key} ${JSON.stringify(value)}`)
+        }
+    }
 }
 
 function changeState(elStateToChange) {
@@ -263,18 +345,6 @@ console.save = function (data, filename) {
     a.dispatchEvent(e)
 }
 
-jobData = () => {
-    // create new function to pull job information and package it into JSON
-    // I need:
-    //  - a job ID (from the DB?)
-    //  - download date (when I press the download button)
-    //  - And added later from powershell:
-    //      - User ID/ User Name
-    //      - print date
-    //      - printer id
-    //      - print queue
-}
-
 //function that called to run the script
 orderlist = function createDataset() {
     //object definitiion or template for data
@@ -302,7 +372,7 @@ orderlist = function createDataset() {
         this.sales_order_id = sales_order_id;
         this.fundraiser_id = fundraiser_id;
         this.magento_id = magento_id;
-        this.fundname = fundraiser_name;
+        this.fundraiser_name = fundraiser_name;
         this.placed_on_date = placed_on_date;
         this.date_downloaded = date_downloaded;
         this.order_type = order_type;
@@ -321,6 +391,9 @@ orderlist = function createDataset() {
     //for loop to increment inbetween orders
     for (let i = 0; i < x; i++) {
         verbosity(`createDataset()`,`6`,`for loop i:${i}`);
+        //first things first, zero out all variables.
+        // orderId = salesOrder = fundId = fundName = placedDate = downloadDate = printDate = orderType = logoScript = priColor = secColor = logoId = eleven = eight = six = five = four = digital = digiSmall = sticker = banner = 0;
+        verbosity('createDataset()`,`9`,`zeroed out all variables for JSON payload');
         imageApplicationTypes = [
             {
                 name: 'digital',
@@ -378,7 +451,7 @@ orderlist = function createDataset() {
             };
             fundraiser_name = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLFN.column].innerText.split('(')[0].trim();
             placed_on_date = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLPD.column].innerText;
-            date_downloaded = Date();
+            date_downloaded = () => { let ISODate = new Date(); return ISODate.toISOString() };
             order_type = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLOT.column].innerText;
             order_notes = () => {
                 try {
@@ -430,7 +503,7 @@ orderlist = function createDataset() {
             };
             orderRowEl = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDF.column].innerText
             logoCountsBySize = orderRow[i].getElementsByTagName(orderCol)[COLUMNS.COLDD.column].innerText
-            verbosity(`createDataset()`,`139`,`order_id: ${order_id} \n sales_order_id: ${sales_order_id()} \n fundraiser_id: ${fundraiser_id} \n fundraiser_name: ${fundraiser_name} \n magento_id: ${magento_id()} \n placed_on_date: ${placed_on_date} \n date_downloaded: ${date_downloaded} \n order_type: ${order_type} \n logo_script: ${logo_script()}`)
+            verbosity(`createDataset()`,`139`,`order_id: ${order_id} \n sales_order_id(): ${sales_order_id()} \n fundraiser_id: ${fundraiser_id} \n fundraiser_name: ${fundraiser_name} \n magento_id: ${magento_id()} \n placed_on_date: ${placed_on_date} \n date_downloaded: ${date_downloaded()} \n order_type: ${order_type} \n logo_script: ${logo_script()}`)
             for (let j = 0; j < logoCountsBySize.split('\n').length; j++) {
                 verbosity(`createDataset()`,`141`,`for loop j:${j}/${orderRowEl}`);
                 verbosity(`createDataset()`,`142`,`orderRowEl: ${orderRowEl} \t logoCountsBySize: ${logoCountsBySize.split('\n').length}`)
@@ -456,7 +529,7 @@ orderlist = function createDataset() {
                 magento_id(),
                 fundraiser_name,
                 placed_on_date,
-                date_downloaded,
+                date_downloaded(),
                 order_type,
                 order_notes(),
                 logo_script(),
@@ -596,8 +669,10 @@ function quickDL() {
                 // new method:
                 s3LinksArray = () => {
                     // Create array of URLs based on the logo sizes in the design details (store) field
+                    verbosity(`quickDL():s3LinksArray`,`35`,`storeDDS[j]: ${storeDDS[j]} : orderRow...${orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLDS.column - storeDDS[j]].innerText}`);
                     // get logo sizes into an array:
-                    logoTypes = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].innerText.split('\n');
+                    logoTypes = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLDS.column - storeDDS[j]].innerText.split('\n');
+                    verbosity(`quickDL():s3LinksArray`,`36`,`logoTypes: ${logoTypes}`);
                     // create blank array to store URLs built from logo types in the previous array.
                     builtURLS = [];
                     // for every logo type in the array, build a URL with the corresponding suffix
@@ -625,9 +700,17 @@ function quickDL() {
                                 break;
                         }
                         // let builtURL = s3Url + orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText + "_" + logoSuffix;
-                        let builtURL = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].getElementsByTagName('a')[i].getAttribute('onclick').split('\'')[1];
-                        verbosity(`quickDL()`,`64`,`${builtURL}`)
-                        builtURLS.push(builtURL);
+                        let builtURL = () => {
+                            let tempURL = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLDS.column - storeDDS[j]].getElementsByTagName('a')[i].getAttribute('onclick').split('\'')[1];
+                            console.log(`URL Truthiness: ${tempURL.includes('https')}`)
+                            if (tempURL.includes('https')) {
+                                return tempURL;
+                            } else {
+                                return s3Url + orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText + '_' + logoSuffix;
+                            }
+                        };
+                        verbosity(`quickDL()`,`64`,`${builtURL()}`)
+                        builtURLS.push(builtURL());
                     }
                     // method 2: Just grab the fundraiser_id from the fundraiser_id column and download all available from s3 bucket
                     // let fundraiser_id = orderRow[checkedOrders[j]].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText
@@ -639,9 +722,9 @@ function quickDL() {
               s3URLS = s3LinksArray();
                 if (s3URLS.length > 4) {s3URLS.pop()}
                 for (let i = 0; i < s3URLS.length; i++) {
+                    verbosity(`quickDL()`,`75`,`j:${j}\ti:${i}\ts3URLS[i] : ${s3URLS[i]}`);
                     imgExt = s3URLS[i].split('_')[1];
-                    verbosity(`quickDL()`,`77`,`j:${j}\ti:${i}\t${imgExt}`);
-                    verbosity(`quickDL()`,`78`,`j:${j}\ti:${i}\t${s3URLS[i]}`);
+                    verbosity(`quickDL()`,`77`,`j:${j}\ti:${i}\timgExt : ${imgExt}`);
                     if (imgExt === 'h.png' || imgExt === 'e.png') {
                         verbosity(`quickDL()`,`80`,`j:${j}\ti:${i}\t${s3URLS[i].split('_')[1]}`);
                         pngfundraiser_id = s3URLS[i].split('/')[4].split('_')[0];
@@ -671,7 +754,7 @@ function checkValidS3Link(url, callback) {
     fileext = url.split('.')[5];
     // check if the URL field is a valid string for manipulation
     if (fileext) {
-        verbosity(`checkValidS3Link()`,`5`,` ${fileext}`)
+        verbosity(`checkValidS3Link()`,`5`,`fileext: ${fileext}`)
     }
     // get the filename ending from the url
     embPng = fileext//[4].split('_');
@@ -736,14 +819,14 @@ function checkStoreURLs() {
         orderRow[j].onload = () => {
         // check if the store's logo is on the s3 server ---------------------
         // make an array of URLs and filter any duplicates
-        let URLTypes = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].innerText.split('\n');
+        let URLTypes = orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column - storeDDS[j]].innerText.split('\n');
         // URLTypes.pop(-1);
         let logoSuffixArr = {};
         var URLS = [];
         for (let i = 0; i < URLTypes.length; i++) { // loop within the logos req'd for an order
             verbosity(`checkStoreURLs()`,`14`,`URLTypes.length: ${URLTypes.length}`)
             URLTypes[i] = URLTypes[i].split(' - ')[0];
-            verbosity(`checkStoreURLs()`,`16`,`URLTypes[${i}]: ${URLTypes[i]}`);
+            verbosity(`checkStoreURLs()`,`16`,`URLTypes[${i}]: ${URLTypes[i]}\n\t\tMatching logos:`);
             switch (URLTypes[i]) {
                 case "Digital Small":
                     verbosity(`checkStoreURLs()`,`19`,`digital small`);
@@ -770,9 +853,10 @@ function checkStoreURLs() {
                     logoSuffixArr[i] = "d.eps"
                     break;
             }
+            verbosity(`checkStoreURLs()`,`42`,`pushing: ${orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column - colOffsetAdjustment(storeDDS[j])].getElementsByTagName('a')[0].getAttribute('onclick').split('\'')}\nto URLS[]`)
             // URLS.push(s3Url + orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLFI.column].innerText + "_" + logoSuffixArr[i]);
-            URLS.push(orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column].getElementsByTagName('a')[0].getAttribute('onclick').split('\'')[1]);
-
+            URLS.push(orderRow[j].getElementsByTagName(orderCol)[COLUMNS.COLDS.column - colOffsetAdjustment(storeDDS[j])].getElementsByTagName('a')[0].getAttribute('onclick').split('\'')[1]);
+            console.log(`\t\tlogoFileURLFunction: ${getLogoURLFromDesignDetails(j)}`)
             verbosity(`checkStoreURLs()`,`45`,`pushed ${URLS[i]} to URLS`)
             // exit loop for i
         }
@@ -801,6 +885,18 @@ function checkStoreURLs() {
         }
     orderRow[j].onload();
     }
+}
+
+function colOffsetAdjustment(offset) {
+    if (offset > 1) {
+        return 1
+    } else {
+        return 0
+    }
+}
+
+function getLogoURLFromDesignDetails(index) {
+    return orderRow[index].getElementsByTagName(orderCol)[COLUMNS.COLDS.column - storeDDS[index]].getElementsByTagName('a')[0].getAttribute('onclick').split('\'')[1]
 }
 
 function storeDDlinks() {
